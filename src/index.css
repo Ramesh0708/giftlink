@@ -266,6 +266,41 @@ textarea { min-height: 88px; resize: vertical; }
   max-height: 90vh;
   overflow: auto;
 }
+.modal.wide {
+  width: min(720px, 100%);
+}
+.link-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.pick-list {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  margin: 12px 0 16px;
+}
+.pick-row {
+  display: grid;
+  grid-template-columns: auto 48px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-weight: 600;
+}
+.pick-row img,
+.pick-ph {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #efe3d4;
+}
+.pick-row input { width: auto; }
 
 .toast {
   position: fixed;
@@ -308,6 +343,6 @@ footer.site {
 }
 
 @media (max-width: 840px) {
-  .hero, .grid-3, .row-2 { grid-template-columns: 1fr; }
+  .hero, .grid-3, .row-2, .link-grid { grid-template-columns: 1fr; }
   .hero-card { rotate: 0; }
 }

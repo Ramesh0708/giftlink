@@ -15,8 +15,8 @@ export default function Home() {
           <h1>Gifts without the awkward guessing.</h1>
           <p className="lede">
             Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop.
-            Send one link. Friends can reserve a gift so nobody doubles up — and
-            you still get a surprise.
+            Connect a shared store list, send one link, and friends can reserve a
+            gift so nobody doubles up.
           </p>
           <p>
             <Link className="btn btn-primary" to="/new">
@@ -57,10 +57,10 @@ export default function Home() {
         <div className="grid-3">
           <article className="card">
             <div className="step-num">1</div>
-            <h3>Add what you want</h3>
+            <h3>Connect Amazon or Flipkart</h3>
             <p className="meta">
-              Paste a product link from Amazon, Flipkart, or any store. Tweak the
-              title, price, and a short note.
+              Link a shared wishlist from Amazon or Flipkart, pick the gifts you
+              want, then add them here. Or paste a single product link.
             </p>
           </article>
           <article className="card">
@@ -99,10 +99,9 @@ export default function Home() {
 
       <section className="section">
         <div className="note">
-          Amazon, Flipkart, and similar stores don’t let third-party apps sign
-          into your shopping account or pull your official wishlist. GiftLink
-          keeps it simple: you pick the products, we host the list, your people
-          buy from the original store.
+          Amazon and Flipkart don’t allow apps to sign into your shopping
+          account. Connect them with a shared wishlist link, or paste product
+          URLs. GiftLink never asks for those passwords.
         </div>
       </section>
 

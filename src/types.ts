@@ -32,6 +32,14 @@ export type Wishlist = {
   items: WishItem[]
 }
 
+export type StoreLink = {
+  store: 'amazon' | 'flipkart'
+  url: string
+  name: string
+  linkedAt: string
+}
+
 export type StoredList = Wishlist & {
   ownerKey: string
+  links?: StoreLink[]
 }

@@ -2,7 +2,7 @@
 
 A shareable gift wishlist. Add products from Amazon, Flipkart, Myntra, and anywhere else, then send one link so friends can buy what you actually want — and claim a gift so nobody doubles up.
 
-Amazon and Flipkart do **not** allow apps to sign into your shopping account. GiftLink never asks for those passwords. You paste a product link (or type the item), we host the list.
+Amazon and Flipkart do **not** allow apps to sign in with your shopping password. GiftLink never asks for those. Instead, connect a **shared wishlist link** (Amazon: Wish List → Share → Anyone with the link) or paste product URLs, pick items, and publish.
 
 ## Run locally
 

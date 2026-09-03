@@ -25,6 +25,7 @@ type List = {
   message: string
   updatedAt: string
   items: Item[]
+  links?: { store: string; url: string; name: string; linkedAt: string }[]
 }
 
 function dbPath() {
@@ -45,7 +46,7 @@ function saveDb(db: Record<string, List>) {
 }
 
 function publicList(list: List) {
-  const { ownerKey: _ownerKey, ...rest } = list
+  const { ownerKey: _ownerKey, links: _links, ...rest } = list
   return rest
 }
 
@@ -124,6 +125,22 @@ function wishlistApi(): Plugin {
         return true
       }
 
+      if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'import-wishlist') {
+        const body = JSON.parse((await readBody(req)) || '{}') as {
+          url?: string
+          text?: string
+        }
+        const { importRemoteWishlist } = await import('./netlify/lib/import-wishlist.mjs')
+        try {
+          send(res, 200, await importRemoteWishlist(body))
+        } catch (err) {
+          send(res, 400, {
+            error: err instanceof Error ? err.message : 'Could not import that list',
+          })
+        }
+        return true
+      }
+
       if (parts[0] !== 'api' || parts[1] !== 'wishlists') {
         send(res, 404, { error: 'Not found' })
         return true
@@ -164,6 +181,7 @@ function wishlistApi(): Plugin {
           message: incoming.message || '',
           updatedAt: new Date().toISOString(),
           items,
+          links: Array.isArray(incoming.links) ? incoming.links : existing?.links,
         }
         db[id] = list
         saveDb(db)

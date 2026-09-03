@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
 import { storeMeta } from '../data/stores'
 import { publishList } from '../lib/api'
 import { money } from '../lib/format'
 import { loadList, removeList, saveList } from '../lib/storage'
-import type { StoredList, WishItem } from '../types'
+import type { StoredList, StoreLink, WishItem } from '../types'
 
 export default function Editor() {
   const { id = '' } = useParams()
   const [list, setList] = useState<StoredList | null>(() => loadList(id))
   const [modal, setModal] = useState<WishItem | 'new' | null>(null)
+  const [connect, setConnect] = useState<'amazon' | 'flipkart' | null>(null)
   const [toast, setToast] = useState('')
   const [publishing, setPublishing] = useState(false)
   const shareUrl = useMemo(
@@ -84,6 +86,31 @@ export default function Editor() {
     void publish(next)
   }
 
+  function importFromStore(items: WishItem[], link: StoreLink) {
+    const seen = new Set(current.items.map((i) => i.url))
+    const fresh = items.filter((i) => !seen.has(i.url))
+    const links = [
+      link,
+      ...(current.links || []).filter((l) => l.store !== link.store),
+    ]
+    const next = persist({
+      ...current,
+      items: [...fresh, ...current.items],
+      links,
+    })
+    setConnect(null)
+    setToast(
+      fresh.length
+        ? `Added ${fresh.length} from ${link.name}.`
+        : 'Those items are already on this list.',
+    )
+    window.setTimeout(() => setToast(''), 3200)
+    if (fresh.length) void publish(next)
+  }
+
+  const amazonLink = (list.links || []).find((l) => l.store === 'amazon')
+  const flipkartLink = (list.links || []).find((l) => l.store === 'flipkart')
+
   return (
     <section>
       <div className="toolbar">
@@ -102,6 +129,37 @@ export default function Editor() {
             Add gift
           </button>
         </div>
+      </div>
+
+      <div className="link-grid">
+        <article className="card">
+          <div className="store-chip" style={{ border: 0, padding: 0 }}>
+            <span className="dot" style={{ background: '#ff9900' }} />
+            Amazon
+          </div>
+          <p className="meta">
+            {amazonLink
+              ? `Linked: ${amazonLink.name}`
+              : 'Pull items from a shared Amazon wishlist.'}
+          </p>
+          <button className="btn btn-ghost" onClick={() => setConnect('amazon')}>
+            {amazonLink ? 'Update Amazon list' : 'Connect Amazon'}
+          </button>
+        </article>
+        <article className="card">
+          <div className="store-chip" style={{ border: 0, padding: 0 }}>
+            <span className="dot" style={{ background: '#2874f0' }} />
+            Flipkart
+          </div>
+          <p className="meta">
+            {flipkartLink
+              ? `Linked: ${flipkartLink.name}`
+              : 'Pull items from a shared Flipkart wishlist.'}
+          </p>
+          <button className="btn btn-ghost" onClick={() => setConnect('flipkart')}>
+            {flipkartLink ? 'Update Flipkart list' : 'Connect Flipkart'}
+          </button>
+        </article>
       </div>
 
       <div className="card form" style={{ marginBottom: 22 }}>
@@ -142,10 +200,18 @@ export default function Editor() {
       {list.items.length === 0 ? (
         <div className="card empty">
           <h3>Nothing here yet</h3>
-          <p>Paste an Amazon or Flipkart link, or add a gift by name.</p>
-          <button className="btn btn-primary" onClick={() => setModal('new')}>
-            Add your first gift
-          </button>
+          <p>Connect Amazon or Flipkart, or add a gift by name.</p>
+          <div className="nav-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn btn-ghost" onClick={() => setConnect('amazon')}>
+              Connect Amazon
+            </button>
+            <button className="btn btn-ghost" onClick={() => setConnect('flipkart')}>
+              Connect Flipkart
+            </button>
+            <button className="btn btn-primary" onClick={() => setModal('new')}>
+              Add your first gift
+            </button>
+          </div>
         </div>
       ) : (
         <div className="items">
@@ -208,6 +274,15 @@ export default function Editor() {
         </button>
       </p>
 
+      {connect && (
+        <ConnectStore
+          storeId={connect}
+          existing={connect === 'amazon' ? amazonLink : flipkartLink}
+          alreadyUrls={list.items.map((i) => i.url)}
+          onClose={() => setConnect(null)}
+          onImport={importFromStore}
+        />
+      )}
       {modal && (
         <ItemModal
           initial={modal === 'new' ? undefined : modal}

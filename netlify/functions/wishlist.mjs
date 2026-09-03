@@ -1,7 +1,7 @@
 import { getStore } from '@netlify/blobs'
 
 function publicList(list) {
-  const { ownerKey, ...rest } = list
+  const { ownerKey, links, ...rest } = list
   return rest
 }
 
@@ -50,6 +50,7 @@ export default async (req) => {
         message: incoming.message || '',
         updatedAt: new Date().toISOString(),
         items,
+        links: Array.isArray(incoming.links) ? incoming.links : existing?.links,
       }
       await store.setJSON(id, list)
       return json(200, { list: publicList(list) })
