@@ -5,7 +5,7 @@ import ItemModal from '../components/ItemModal'
 import { storeMeta } from '../data/stores'
 import { publishList } from '../lib/api'
 import { money } from '../lib/format'
-import { shareCopy, whatsappShareUrl } from '../lib/share'
+import { publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -18,7 +18,7 @@ export default function Editor() {
   const [publishing, setPublishing] = useState(false)
   const [shareReady, setShareReady] = useState(false)
   const shareUrl = useMemo(
-    () => (id ? `${window.location.origin}/w/${id}` : ''),
+    () => (id ? publicShareUrl(window.location.origin, id) : ''),
     [id],
   )
 

@@ -68,6 +68,11 @@ export default function App() {
         <Route path="/w/:id" element={<View />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <footer className="site credits">
+        Idea by <strong>Rishikesh Kunte</strong>
+        {' · '}
+        Built by <strong>Ramesh Choudhary</strong>
+      </footer>
     </div>
   )
 }

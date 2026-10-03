@@ -28,8 +28,36 @@ type List = {
   links?: { store: string; url: string; name: string; linkedAt: string }[]
 }
 
+function statsPath() {
+  return path.resolve('.data/stats.json')
+}
+
 function dbPath() {
   return path.resolve('.data/wishlists.json')
+}
+
+function loadStats() {
+  try {
+    return JSON.parse(fs.readFileSync(statsPath(), 'utf8')) as {
+      visits: number
+      lists: number
+      opens: number
+    }
+  } catch {
+    return { visits: 0, lists: 0, opens: 0 }
+  }
+}
+
+function saveStats(stats: { visits: number; lists: number; opens: number }) {
+  fs.mkdirSync(path.dirname(statsPath()), { recursive: true })
+  fs.writeFileSync(statsPath(), JSON.stringify(stats, null, 2))
+}
+
+function bumpLocal(field: 'visits' | 'lists' | 'opens') {
+  const stats = loadStats()
+  stats[field] += 1
+  saveStats(stats)
+  return stats
 }
 
 function loadDb(): Record<string, List> {
@@ -78,9 +106,29 @@ async function preview(url: string) {
 
 function wishlistApi(): Plugin {
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.url?.startsWith('/s/')) {
+      const { parts } = matchApi(req.url)
+      const id = parts[1] || ''
+      const origin = `http://${req.headers.host || 'localhost:5173'}`
+      const list = id ? loadDb()[id] : null
+      const { shareCardHtml } = await import('./netlify/lib/share-card.mjs')
+      const html = shareCardHtml({ origin, id, list })
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.end(html)
+      return true
+    }
     if (!req.url?.startsWith('/api/')) return false
     const { parts } = matchApi(req.url)
     try {
+      if (req.method === 'GET' && parts[0] === 'api' && parts[1] === 'stats') {
+        send(res, 200, loadStats())
+        return true
+      }
+      if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'stats') {
+        send(res, 200, bumpLocal('visits'))
+        return true
+      }
       if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'preview') {
         const body = JSON.parse((await readBody(req)) || '{}') as { url?: string }
         if (!body.url) {
@@ -123,6 +171,7 @@ function wishlistApi(): Plugin {
           send(res, 404, { error: 'Wishlist not found' })
           return true
         }
+        bumpLocal('opens')
         send(res, 200, { list: publicList(list) })
         return true
       }
@@ -134,6 +183,7 @@ function wishlistApi(): Plugin {
           send(res, 403, { error: 'Wrong edit key' })
           return true
         }
+        if (!existing) bumpLocal('lists')
         const incomingItems = Array.isArray(incoming.items) ? incoming.items : []
         const items = incomingItems.map((item) => {
           const prev = existing?.items.find((i) => i.id === item.id)

@@ -1,12 +1,16 @@
+export function publicShareUrl(origin: string, id: string) {
+  return `${origin}/s/${id}`
+}
+
 export function shareCopy(shareUrl: string, recipient = '') {
   const who = recipient.trim() || 'me'
-  return `Amazon/Flipkart sale starts 8–9 Oct. Here’s what I’d love for ${who} — pick one so nobody buys the same gift:\n${shareUrl}`
+  return `🎁 Here’s a GiftLink for ${who} — pick a gift so nobody guesses (or doubles up).\n${shareUrl}`
 }
 
 export function forwardCopy(shareUrl: string, recipient = '', occasion = '') {
   const who = recipient.trim() || 'this'
-  const when = occasion.trim() ? ` ${occasion.trim()}` : ''
-  return `Looking at ${who}'s${when} GiftLink — claim one so we don’t double-buy:\n${shareUrl}`
+  const when = occasion.trim() ? ` (${occasion.trim()})` : ''
+  return `Looking at ${who}’s GiftLink${when} — claim one so we don’t double-buy.\n${shareUrl}`
 }
 
 export function whatsappShareUrl(shareUrl: string, recipient = '') {

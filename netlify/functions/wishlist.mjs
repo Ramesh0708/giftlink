@@ -1,4 +1,5 @@
 import { getStore } from '@netlify/blobs'
+import { bumpStat } from '../lib/stats-store.mjs'
 
 function publicList(list) {
   const { ownerKey, links, ...rest } = list
@@ -27,6 +28,7 @@ export default async (req) => {
     if (req.method === 'GET' && id) {
       const list = await store.get(id, { type: 'json' })
       if (!list) return json(404, { error: 'Wishlist not found' })
+      void bumpStat('opens')
       return json(200, { list: publicList(list) })
     }
 
@@ -37,6 +39,7 @@ export default async (req) => {
       if (existing && existing.ownerKey !== ownerKey) {
         return json(403, { error: 'Wrong edit key' })
       }
+      if (!existing) void bumpStat('lists')
       const incomingItems = Array.isArray(incoming.items) ? incoming.items : []
       const items = incomingItems.map((item) => {
         const prev = existing?.items?.find((i) => i.id === item.id)

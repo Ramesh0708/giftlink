@@ -1,11 +1,24 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { STORES } from '../data/stores'
+import { fetchStats, hitSite, type SiteStats } from '../lib/api'
 import { loadAllLists } from '../lib/storage'
 
 export default function Home() {
   const location = useLocation()
   const mine = useMemo(() => loadAllLists(), [location.key])
+  const [stats, setStats] = useState<SiteStats | null>(null)
+
+  useEffect(() => {
+    const key = 'giftlink:hit'
+    const run = sessionStorage.getItem(key)
+      ? fetchStats()
+      : hitSite().then((data) => {
+          sessionStorage.setItem(key, '1')
+          return data
+        })
+    void run.then(setStats).catch(() => setStats(null))
+  }, [])
 
   return (
     <>
@@ -33,6 +46,13 @@ export default function Home() {
               How to use
             </Link>
           </p>
+          {stats && (
+            <p className="stat-line">
+              <strong>{stats.lists}</strong> wishlists published ·{' '}
+              <strong>{stats.visits}</strong> visits ·{' '}
+              <strong>{stats.opens}</strong> list opens
+            </p>
+          )}
         </div>
         <div className="hero-card" aria-hidden="true">
           <div className="hero-item">
@@ -137,7 +157,7 @@ export default function Home() {
 
       <footer className="site">
         Stuck? Read <Link to="/how-to">How to use GiftLink</Link> — three minutes,
-        then send one link.
+        then send one WhatsApp message.
       </footer>
     </>
   )

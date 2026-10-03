@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
 import { money } from '../lib/format'
-import { whatsappForwardUrl } from '../lib/share'
+import { publicShareUrl, whatsappForwardUrl } from '../lib/share'
 import type { Wishlist } from '../types'
 
 const NAME_KEY = 'giftlink:gifterName'
@@ -96,7 +96,7 @@ export default function View() {
         <a
           className="btn btn-whatsapp"
           href={whatsappForwardUrl(
-            window.location.href,
+            publicShareUrl(window.location.origin, id),
             list.recipient,
             list.occasion,
           )}

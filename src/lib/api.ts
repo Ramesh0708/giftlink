@@ -87,3 +87,23 @@ export async function previewUrl(url: string): Promise<PreviewResult> {
   })
   return parse<PreviewResult>(res)
 }
+
+export type SiteStats = {
+  visits: number
+  lists: number
+  opens: number
+}
+
+export async function fetchStats(): Promise<SiteStats> {
+  const res = await fetch('/api/stats')
+  return parse<SiteStats>(res)
+}
+
+export async function hitSite(): Promise<SiteStats> {
+  const res = await fetch('/api/stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field: 'visits' }),
+  })
+  return parse<SiteStats>(res)
+}
