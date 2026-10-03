@@ -29,8 +29,8 @@ function NewList() {
       id: shortId(),
       ownerKey: uid(),
       recipient: '',
-      occasion: 'Birthday',
-      message: 'If you were going to get me something, I’d love one of these.',
+      occasion: 'Diwali 2026',
+      message: 'If you were going to get me something this festive season, I’d love one of these — buy it in the Amazon/Flipkart sale if you can.',
       updatedAt: new Date().toISOString(),
       items: [],
     }

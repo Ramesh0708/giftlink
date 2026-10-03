@@ -9,14 +9,21 @@ export default function Home() {
 
   return (
     <>
+      <aside className="sale-banner">
+        <strong>Sale week is here.</strong> Amazon Great Indian Festival opens 8
+        Oct (Prime 7 Oct). Flipkart Big Billion Days opens 9 Oct (Plus 8 Oct).
+        Add gifts now so people can buy at sale price — not guess on Diwali
+        (8 Nov).
+        <Link to="/new">Make a Diwali list</Link>
+      </aside>
       <section className="hero">
         <div>
           <p className="eyebrow">Share what you actually want</p>
           <h1>Gifts without the awkward guessing.</h1>
           <p className="lede">
             Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop.
-            Connect a shared store list, send one link, and friends can reserve a
-            gift so nobody doubles up.
+            Connect a shared store list, send one WhatsApp link, and friends can
+            reserve a gift so nobody doubles up.
           </p>
           <p>
             <Link className="btn btn-primary" to="/new">

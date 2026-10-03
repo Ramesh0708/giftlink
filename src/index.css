@@ -35,6 +35,37 @@ img { max-width: 100%; display: block; }
   margin: 0 auto;
 }
 
+.sale-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: linear-gradient(100deg, #5c1a2c, #8b2942 55%, #a45c2a);
+  color: #fff8ee;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.sale-banner a {
+  color: #2b1810;
+  background: #e8c98a;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.share-bar {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #e4f3ec;
+  border: 1px solid #b7dcc9;
+}
+
 .nav {
   display: flex;
   align-items: center;
@@ -77,6 +108,7 @@ img { max-width: 100%; display: block; }
   border: 1px solid var(--line);
 }
 .btn-sage { background: var(--sage); color: #f6fff9; }
+.btn-whatsapp { background: #128c7e; color: #f4fffb; }
 .btn-wide { width: 100%; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 

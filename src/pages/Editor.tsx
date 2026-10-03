@@ -5,6 +5,7 @@ import ItemModal from '../components/ItemModal'
 import { storeMeta } from '../data/stores'
 import { publishList } from '../lib/api'
 import { money } from '../lib/format'
+import { shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -15,6 +16,7 @@ export default function Editor() {
   const [connect, setConnect] = useState<'amazon' | 'flipkart' | null>(null)
   const [toast, setToast] = useState('')
   const [publishing, setPublishing] = useState(false)
+  const [shareReady, setShareReady] = useState(false)
   const shareUrl = useMemo(
     () => (id ? `${window.location.origin}/w/${id}` : ''),
     [id],
@@ -36,7 +38,8 @@ export default function Editor() {
     setPublishing(true)
     try {
       await publishList(next)
-      setToast('Published — friends can open the share link now.')
+      setShareReady(true)
+      setToast('Published — send the WhatsApp message next.')
     } catch (err) {
       setToast(err instanceof Error ? err.message : 'Could not publish yet.')
     } finally {
@@ -45,12 +48,20 @@ export default function Editor() {
     }
   }
 
+  async function shareWhatsApp() {
+    if (!list) return
+    await publish(list)
+    const href = whatsappShareUrl(shareUrl, list.recipient || list.occasion)
+    window.open(href, '_blank', 'noopener,noreferrer')
+  }
+
   async function copyLink() {
     if (!list) return
     await publish(list)
+    const text = shareCopy(shareUrl, list.recipient || list.occasion)
     try {
-      await navigator.clipboard.writeText(shareUrl)
-      setToast('Share link copied.')
+      await navigator.clipboard.writeText(text)
+      setToast('WhatsApp-ready message copied.')
     } catch {
       setToast(shareUrl)
     }
@@ -124,7 +135,10 @@ export default function Editor() {
         </div>
         <div className="nav-actions">
           <button className="btn btn-ghost" onClick={() => void copyLink()}>
-            Copy share link
+            Copy share text
+          </button>
+          <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+            WhatsApp
           </button>
           <button className="btn btn-primary" onClick={() => setModal('new')}>
             Add gift
@@ -141,8 +155,9 @@ export default function Editor() {
             Flipkart — or connect a whole shared wishlist below.
           </li>
           <li>
-            Tap <strong>Publish</strong>, then <strong>Copy share link</strong> and
-            send the <code>/w/…</code> link to friends (not this page).
+            Tap <strong>Publish</strong>, then <strong>WhatsApp</strong> — send the
+            ready message. Friends must open the <code>/w/…</code> link, not this
+            editor page.
           </li>
         </ol>
       </div>
@@ -193,7 +208,7 @@ export default function Editor() {
             <input
               value={list.occasion}
               onChange={(e) => persist({ ...list, occasion: e.target.value })}
-              placeholder="Birthday, Diwali, just because"
+              placeholder="Diwali 2026, birthday…"
             />
           </label>
         </div>
@@ -211,6 +226,22 @@ export default function Editor() {
         >
           {publishing ? 'Publishing…' : 'Publish so friends can see it'}
         </button>
+        {shareReady && (
+          <div className="share-bar">
+            <p className="meta">
+              List is live. Send this — it already includes the sale note and your
+              <code>/w/</code> link.
+            </p>
+            <div className="nav-actions">
+              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                Send on WhatsApp
+              </button>
+              <button className="btn btn-ghost" onClick={() => void copyLink()}>
+                Copy message
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {list.items.length === 0 ? (

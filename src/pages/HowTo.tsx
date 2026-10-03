@@ -64,9 +64,9 @@ export default function HowTo() {
           <h3>Publish and send the share link</h3>
           <p className="meta">
             Tap <strong>Publish so friends can see it</strong>, then{' '}
-            <strong>Copy share link</strong>. It looks like{' '}
-            <code>/w/your-id</code>. Send that in WhatsApp or Instagram. Don’t
-            send the <code>/me/</code> editor link — that’s only for you.
+            <strong>WhatsApp</strong>. GiftLink fills a ready message with your{' '}
+            <code>/w/…</code> link. Don’t send the <code>/me/</code> editor link —
+            that’s only for you.
           </p>
         </article>
 
