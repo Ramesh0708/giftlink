@@ -162,7 +162,7 @@ export default function ConnectStore({
                     }
                   />
                   {item.image ? (
-                    <img src={item.image} alt="" />
+                    <img src={item.image} alt="" referrerPolicy="no-referrer" />
                   ) : (
                     <span className="pick-ph" />
                   )}

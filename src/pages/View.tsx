@@ -95,6 +95,10 @@ export default function View() {
       </div>
 
       <div className="card" style={{ marginBottom: 22, maxWidth: 420 }}>
+        <p className="meta">
+          Type your name, tap <strong>I’ll get this</strong>, then buy it on
+          Amazon or Flipkart. They won’t see who claimed which gift.
+        </p>
         <label>
           Your name (so the group doesn’t double-buy)
           <input
@@ -118,7 +122,15 @@ export default function View() {
             return (
               <article className="item-card" key={item.id}>
                 {item.image ? (
-                  <img className="item-photo" src={item.image} alt="" />
+                  <img
+                    className="item-photo"
+                    src={item.image}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
                 ) : (
                   <div className="item-photo" />
                 )}

@@ -21,6 +21,9 @@ export default function Home() {
           <p>
             <Link className="btn btn-primary" to="/new">
               Start a wishlist
+            </Link>{' '}
+            <Link className="btn btn-ghost" to="/how-to">
+              How to use
             </Link>
           </p>
         </div>
@@ -126,8 +129,8 @@ export default function Home() {
       )}
 
       <footer className="site">
-        GiftLink is a private list you share on purpose. Deploy it on Netlify
-        and send the link — no app store, no guessing.
+        Stuck? Read <Link to="/how-to">How to use GiftLink</Link> — three minutes,
+        then send one link.
       </footer>
     </>
   )

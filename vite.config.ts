@@ -72,42 +72,8 @@ function matchApi(url: string) {
 }
 
 async function preview(url: string) {
-  const res = await fetch(url, {
-    redirect: 'follow',
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      Accept: 'text/html',
-    },
-  })
-  const html = await res.text()
-  const pick = (prop: string) => {
-    const re = new RegExp(
-      `<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`,
-      'i',
-    )
-    const re2 = new RegExp(
-      `<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`,
-      'i',
-    )
-    return re.exec(html)?.[1] || re2.exec(html)?.[1] || ''
-  }
-  const title =
-    pick('og:title') ||
-    /<title[^>]*>([^<]+)<\/title>/i.exec(html)?.[1]?.trim() ||
-    ''
-  const image = pick('og:image') || pick('twitter:image')
-  const priceRaw =
-    pick('product:price:amount') ||
-    pick('og:price:amount') ||
-    /"price"\s*:\s*"?([\d.]+)"?/i.exec(html)?.[1] ||
-    ''
-  const price = priceRaw ? Number(priceRaw.replace(/[^\d.]/g, '')) : null
-  return {
-    title: title.replace(/\s+/g, ' ').slice(0, 140),
-    image,
-    price: price && Number.isFinite(price) ? price : null,
-  }
+  const { fetchProductPreview } = await import('./netlify/lib/extract-product.mjs')
+  return fetchProductPreview(url)
 }
 
 function wishlistApi(): Plugin {

@@ -23,7 +23,8 @@ Open the URL Vite prints. Sharing and “I’ll get this” work on your machine
 After deploy:
 
 1. Open your Netlify URL
-2. Create a wishlist, add gifts, click **Publish** or **Copy share link**
-3. Send `/w/...` to friends
+2. Open **How to use** if you need the walkthrough
+3. Create a wishlist, add gifts, click **Publish** or **Copy share link**
+4. Send `/w/...` to friends
 
 Edit your list from the same browser at `/me/...` (saved on that device).

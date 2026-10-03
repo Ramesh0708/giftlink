@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import type { Priority, WishItem } from '../types'
 import { STORES, storeFromUrl } from '../data/stores'
 import { previewUrl } from '../lib/api'
@@ -27,39 +27,54 @@ export default function ItemModal({
   onSave: (item: WishItem) => void
 }) {
   const [item, setItem] = useState<WishItem>(initial ? { ...initial } : empty())
+  const itemRef = useRef(item)
+  itemRef.current = item
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function fetchPreview() {
-    if (!item.url) return
+  async function fetchPreview(url = itemRef.current.url) {
+    if (!url) return itemRef.current
     setBusy(true)
     setError('')
     try {
-      const data = await previewUrl(item.url)
-      setItem((cur) => ({
-        ...cur,
-        title: cur.title || data.title,
-        image: cur.image || data.image,
-        price: cur.price ?? data.price,
-        store: storeFromUrl(item.url),
-      }))
+      const data = await previewUrl(url)
+      const next = {
+        ...itemRef.current,
+        title: itemRef.current.title || data.title,
+        image: data.image || itemRef.current.image,
+        price: itemRef.current.price ?? data.price,
+        store: storeFromUrl(url),
+      }
+      setItem(next)
+      itemRef.current = next
+      if (!data.image) {
+        setError('Got the name, but the store hid the photo. You can paste an image URL below.')
+      }
+      return next
     } catch {
-      setItem((cur) => ({ ...cur, store: storeFromUrl(item.url) }))
-      setError('Could not auto-fill that page. Add the name and price yourself.')
+      const next = { ...itemRef.current, store: storeFromUrl(url) }
+      setItem(next)
+      itemRef.current = next
+      setError('Could not auto-fill that page. Add the name, photo, and price yourself.')
+      return next
     } finally {
       setBusy(false)
     }
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!item.title.trim()) {
+    let next = itemRef.current
+    if (next.url && (!next.image || !next.title)) {
+      next = await fetchPreview(next.url)
+    }
+    if (!next.title.trim()) {
       setError('Give the gift a name.')
       return
     }
     onSave({
-      ...item,
-      store: item.url ? storeFromUrl(item.url) : item.store,
+      ...next,
+      store: next.url ? storeFromUrl(next.url) : next.store,
       reservedBy: initial?.reservedBy ?? null,
     })
   }
@@ -71,13 +86,24 @@ export default function ItemModal({
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{initial ? 'Edit gift' : 'Add a gift'}</h2>
-        <form className="form" onSubmit={submit}>
+        <p className="meta">
+          Copy the product link from your browser address bar on Amazon, Flipkart,
+          or any shop, then paste it here.
+        </p>
+        <form className="form" onSubmit={(e) => void submit(e)}>
           <label>
             Product link
             <input
               value={item.url}
               onChange={(e) => set('url', e.target.value)}
               onBlur={() => void fetchPreview()}
+              onPaste={(e) => {
+                const pasted = e.clipboardData.getData('text').trim()
+                if (/^https?:\/\//i.test(pasted)) {
+                  set('url', pasted)
+                  window.setTimeout(() => void fetchPreview(pasted), 50)
+                }
+              }}
               placeholder="https://www.amazon.in/… or Flipkart, Myntra…"
             />
           </label>
@@ -89,6 +115,17 @@ export default function ItemModal({
           >
             {busy ? 'Reading link…' : 'Fill from link'}
           </button>
+          {item.image && (
+            <img
+              className="preview-photo"
+              src={item.image}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          )}
           <label>
             What is it?
             <input
@@ -156,8 +193,8 @@ export default function ItemModal({
             />
           </label>
           {error && <p className="meta">{error}</p>}
-          <button className="btn btn-primary btn-wide" type="submit">
-            Save gift
+          <button className="btn btn-primary btn-wide" type="submit" disabled={busy}>
+            {busy ? 'Reading link…' : 'Save gift'}
           </button>
         </form>
       </div>

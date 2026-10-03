@@ -1,3 +1,5 @@
+import { amazonImageFallback, fetchProductPreview } from './extract-product.mjs'
+
 const FETCH_HEADERS = {
   'User-Agent':
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -92,7 +94,7 @@ function amazonItems(html, pageUrl) {
       key: asin,
       title: cleanTitle,
       url: absUrl(href || `/dp/${asin}`, origin),
-      image: image ? absUrl(image, origin) : '',
+      image: image ? absUrl(image, origin) : amazonImageFallback(absUrl(href || `/dp/${asin}`, origin)),
       price,
       store: 'amazon',
     })
@@ -197,22 +199,14 @@ function parsePage(html, pageUrl) {
 }
 
 async function itemFromProductPage(url) {
-  const html = await fetchPage(url)
+  const data = await fetchProductPreview(url)
   const store = detectStore(url)
-  const title =
-    html.match(/property="og:title"[^>]+content="([^"]+)"/i)?.[1] ||
-    html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ||
-    url
-  const image =
-    html.match(/property="og:image"[^>]+content="([^"]+)"/i)?.[1] ||
-    html.match(/content="([^"]+)"[^>]+property="og:image"/i)?.[1] ||
-    ''
   return {
     key: url,
-    title: stripTags(title).slice(0, 160),
+    title: (data.title || url).slice(0, 160),
     url,
-    image,
-    price: parsePrice(html),
+    image: data.image || '',
+    price: data.price,
     store: store === 'other' ? 'other' : store,
   }
 }

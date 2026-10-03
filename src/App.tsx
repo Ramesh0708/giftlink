@@ -5,6 +5,7 @@ import { saveList } from './lib/storage'
 import Home from './pages/Home'
 import Editor from './pages/Editor'
 import View from './pages/View'
+import HowTo from './pages/HowTo'
 import type { StoredList } from './types'
 
 function Logo() {
@@ -48,6 +49,9 @@ export default function App() {
           GiftLink
         </Link>
         <div className="nav-actions">
+          <Link className="btn btn-ghost" to="/how-to">
+            How to use
+          </Link>
           <Link className="btn btn-ghost" to="/">
             Home
           </Link>
@@ -58,6 +62,7 @@ export default function App() {
       </nav>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/how-to" element={<HowTo />} />
         <Route path="/new" element={<NewList />} />
         <Route path="/me/:id" element={<Editor />} />
         <Route path="/w/:id" element={<View />} />

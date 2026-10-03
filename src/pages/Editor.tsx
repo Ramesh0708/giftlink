@@ -118,7 +118,8 @@ export default function Editor() {
           <p className="eyebrow">Your private editor</p>
           <h1>{list.recipient || 'Name this wishlist'}</h1>
           <p className="meta">
-            Friends use {shareUrl} — they never see this edit screen.
+            Friends use {shareUrl} — they never see this edit screen.{' '}
+            <Link to="/how-to">Need a walkthrough?</Link>
           </p>
         </div>
         <div className="nav-actions">
@@ -129,6 +130,21 @@ export default function Editor() {
             Add gift
           </button>
         </div>
+      </div>
+
+      <div className="card note" style={{ marginBottom: 22 }}>
+        <strong>Do this in order</strong>
+        <ol className="guide-ol">
+          <li>Write your name and occasion above.</li>
+          <li>
+            Tap <strong>Add gift</strong> and paste a product link from Amazon or
+            Flipkart — or connect a whole shared wishlist below.
+          </li>
+          <li>
+            Tap <strong>Publish</strong>, then <strong>Copy share link</strong> and
+            send the <code>/w/…</code> link to friends (not this page).
+          </li>
+        </ol>
       </div>
 
       <div className="link-grid">
@@ -220,7 +236,15 @@ export default function Editor() {
             return (
               <article className="item-card" key={item.id}>
                 {item.image ? (
-                  <img className="item-photo" src={item.image} alt="" />
+                  <img
+                    className="item-photo"
+                    src={item.image}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
                 ) : (
                   <div className="item-photo" />
                 )}
