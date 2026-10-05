@@ -163,8 +163,8 @@ export default function Editor() {
       </div>
 
       <div className="link-grid">
-        <article className="card">
-          <div className="store-chip" style={{ border: 0, padding: 0 }}>
+        <article className="card store-card">
+          <div className="store-chip" style={{ border: 0, padding: 0, background: 'transparent' }}>
             <span className="dot" style={{ background: '#ff9900' }} />
             Amazon
           </div>
@@ -173,12 +173,12 @@ export default function Editor() {
               ? `Linked: ${amazonLink.name}`
               : 'Pull items from a shared Amazon wishlist.'}
           </p>
-          <button className="btn btn-ghost" onClick={() => setConnect('amazon')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConnect('amazon')}>
             {amazonLink ? 'Update Amazon list' : 'Connect Amazon'}
           </button>
         </article>
-        <article className="card">
-          <div className="store-chip" style={{ border: 0, padding: 0 }}>
+        <article className="card store-card">
+          <div className="store-chip" style={{ border: 0, padding: 0, background: 'transparent' }}>
             <span className="dot" style={{ background: '#2874f0' }} />
             Flipkart
           </div>
@@ -187,7 +187,7 @@ export default function Editor() {
               ? `Linked: ${flipkartLink.name}`
               : 'Pull items from a shared Flipkart wishlist.'}
           </p>
-          <button className="btn btn-ghost" onClick={() => setConnect('flipkart')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
             {flipkartLink ? 'Update Flipkart list' : 'Connect Flipkart'}
           </button>
         </article>
@@ -249,13 +249,13 @@ export default function Editor() {
           <h3>Nothing here yet</h3>
           <p>Connect Amazon or Flipkart, or add a gift by name.</p>
           <div className="nav-actions" style={{ justifyContent: 'center' }}>
-            <button className="btn btn-ghost" onClick={() => setConnect('amazon')}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConnect('amazon')}>
               Connect Amazon
             </button>
-            <button className="btn btn-ghost" onClick={() => setConnect('flipkart')}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
               Connect Flipkart
             </button>
-            <button className="btn btn-primary" onClick={() => setModal('new')}>
+            <button className="btn btn-primary btn-sm" onClick={() => setModal('new')}>
               Add your first gift
             </button>
           </div>
@@ -291,13 +291,13 @@ export default function Editor() {
                   {item.notes && <p className="meta">{item.notes}</p>}
                   <div className="item-actions">
                     <button
-                      className="btn btn-ghost"
+                      className="btn btn-ghost btn-sm"
                       onClick={() => setModal(item)}
                     >
                       Edit
                     </button>
                     <button
-                      className="btn btn-ghost"
+                      className="btn btn-ghost btn-sm"
                       onClick={() =>
                         persist({
                           ...list,

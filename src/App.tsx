@@ -49,13 +49,13 @@ export default function App() {
           GiftLink
         </Link>
         <div className="nav-actions">
-          <Link className="btn btn-ghost" to="/how-to">
+          <Link className="btn btn-ghost btn-sm" to="/how-to">
             How to use
           </Link>
-          <Link className="btn btn-ghost" to="/">
+          <Link className="btn btn-ghost btn-sm" to="/">
             Home
           </Link>
-          <Link className="btn btn-primary" to="/new">
+          <Link className="btn btn-primary btn-sm" to="/new">
             Create wishlist
           </Link>
         </div>

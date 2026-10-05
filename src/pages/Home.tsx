@@ -47,11 +47,17 @@ export default function Home() {
             </Link>
           </p>
           {stats && (
-            <p className="stat-line">
-              <strong>{stats.lists}</strong> wishlists published ·{' '}
-              <strong>{stats.visits}</strong> visits ·{' '}
-              <strong>{stats.opens}</strong> list opens
-            </p>
+            <div className="stat-row">
+              <span className="stat-chip">
+                <strong>{stats.lists}</strong> wishlists
+              </span>
+              <span className="stat-chip">
+                <strong>{stats.visits}</strong> visits
+              </span>
+              <span className="stat-chip">
+                <strong>{stats.opens}</strong> list opens
+              </span>
+            </div>
           )}
         </div>
         <div className="hero-card" aria-hidden="true">
@@ -144,8 +150,7 @@ export default function Home() {
                 <div>
                   <strong>{list.recipient || 'Untitled wishlist'}</strong>
                   <p className="meta">
-                    {list.occasion} · {list.items.length} item
-                    {list.items.length === 1 ? '' : 's'}
+                    {list.occasion} · {list.items.length === 1 ? '1 item' : `${list.items.length} items`}
                   </p>
                 </div>
                 <span className="btn btn-ghost">Open</span>

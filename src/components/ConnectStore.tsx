@@ -96,10 +96,17 @@ export default function ConnectStore({
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal wide" onClick={(e) => e.stopPropagation()}>
-        <p className="eyebrow" style={{ color: store.hue }}>
-          {store.name}
-        </p>
-        <h2>Connect {store.name} wishlist</h2>
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow" style={{ color: store.hue }}>
+              {store.name}
+            </p>
+            <h2>Connect {store.name} wishlist</h2>
+          </div>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
         <p className="meta">{store.how}</p>
         <p className="meta">
           Amazon and Flipkart don’t let apps sign into your shopping account.

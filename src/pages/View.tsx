@@ -163,13 +163,13 @@ export default function View() {
                   )}
                   <div className="item-actions">
                     {item.url && (
-                      <a className="btn btn-primary" href={item.url} target="_blank" rel="noreferrer">
+                      <a className="btn btn-primary btn-sm" href={item.url} target="_blank" rel="noreferrer">
                         Buy on {store.name}
                       </a>
                     )}
                     {!item.reservedBy && (
                       <button
-                        className="btn btn-ghost"
+                        className="btn btn-ghost btn-sm"
                         disabled={busy === item.id}
                         onClick={() => void claim(item.id)}
                       >
@@ -178,7 +178,7 @@ export default function View() {
                     )}
                     {mine && (
                       <button
-                        className="btn btn-ghost"
+                        className="btn btn-ghost btn-sm"
                         disabled={busy === item.id}
                         onClick={() => void undo(item.id)}
                       >

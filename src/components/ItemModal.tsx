@@ -85,7 +85,12 @@ export default function ItemModal({
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>{initial ? 'Edit gift' : 'Add a gift'}</h2>
+        <div className="modal-head">
+          <h2>{initial ? 'Edit gift' : 'Add a gift'}</h2>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
         <p className="meta">
           Copy the product link from your browser address bar on Amazon, Flipkart,
           or any shop, then paste it here.
