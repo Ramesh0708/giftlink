@@ -1,24 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { STORES } from '../data/stores'
-import { fetchStats, hitSite, type SiteStats } from '../lib/api'
 import { loadAllLists } from '../lib/storage'
 
 export default function Home() {
   const location = useLocation()
   const mine = useMemo(() => loadAllLists(), [location.key])
-  const [stats, setStats] = useState<SiteStats | null>(null)
-
-  useEffect(() => {
-    const key = 'giftlink:hit'
-    const run = sessionStorage.getItem(key)
-      ? fetchStats()
-      : hitSite().then((data) => {
-          sessionStorage.setItem(key, '1')
-          return data
-        })
-    void run.then(setStats).catch(() => setStats(null))
-  }, [])
 
   return (
     <>
@@ -46,19 +33,6 @@ export default function Home() {
               How to use
             </Link>
           </p>
-          {stats && (
-            <div className="stat-row">
-              <span className="stat-chip">
-                <strong>{stats.lists}</strong> wishlists
-              </span>
-              <span className="stat-chip">
-                <strong>{stats.visits}</strong> visits
-              </span>
-              <span className="stat-chip">
-                <strong>{stats.opens}</strong> list opens
-              </span>
-            </div>
-          )}
         </div>
         <div className="hero-card" aria-hidden="true">
           <div className="hero-item">

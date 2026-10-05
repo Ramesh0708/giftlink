@@ -492,22 +492,6 @@ footer.credits {
   padding: 8px 0 48px;
   text-align: center;
 }
-.stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
-}
-.stat-chip {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-.stat-chip strong { color: var(--wine); font-weight: 800; }
 
 @media (max-width: 840px) {
   .hero, .grid-3, .row-2, .link-grid { grid-template-columns: 1fr; }

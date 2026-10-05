@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { fetchStats, hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { saveList } from './lib/storage'
 import Home from './pages/Home'
@@ -41,6 +42,19 @@ function NewList() {
 }
 
 export default function App() {
+  const [visits, setVisits] = useState<number | null>(null)
+
+  useEffect(() => {
+    const key = 'giftlink:hit'
+    const run = sessionStorage.getItem(key)
+      ? fetchStats()
+      : hitSite().then((data) => {
+          sessionStorage.setItem(key, '1')
+          return data
+        })
+    void run.then((data) => setVisits(data.visits)).catch(() => setVisits(null))
+  }, [])
+
   return (
     <div className="wrap">
       <nav className="nav">
@@ -69,6 +83,12 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="site credits">
+        {visits != null && (
+          <>
+            {visits.toLocaleString()} visits
+            {' · '}
+          </>
+        )}
         Idea by <strong>Rishikesh Kunte</strong>
         {' · '}
         Built by <strong>Ramesh Choudhary</strong>
