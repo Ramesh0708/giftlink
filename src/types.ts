@@ -42,4 +42,5 @@ export type StoreLink = {
 export type StoredList = Wishlist & {
   ownerKey: string
   links?: StoreLink[]
+  published?: boolean
 }

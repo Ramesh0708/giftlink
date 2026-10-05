@@ -28,7 +28,8 @@ export default async (req) => {
     if (req.method === 'GET' && id) {
       const list = await store.get(id, { type: 'json' })
       if (!list) return json(404, { error: 'Wishlist not found' })
-      void bumpStat('opens')
+      const peek = new URL(req.url).searchParams.has('peek')
+      if (!peek) void bumpStat('opens')
       return json(200, { list: publicList(list) })
     }
 
@@ -48,9 +49,9 @@ export default async (req) => {
       const list = {
         id,
         ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
-        recipient: incoming.recipient || 'Someone',
-        occasion: incoming.occasion || 'Birthday',
-        message: incoming.message || '',
+        recipient: typeof incoming.recipient === 'string' ? incoming.recipient : existing?.recipient || '',
+        occasion: typeof incoming.occasion === 'string' ? incoming.occasion : existing?.occasion || 'Birthday',
+        message: typeof incoming.message === 'string' ? incoming.message : existing?.message || '',
         updatedAt: new Date().toISOString(),
         items,
         links: Array.isArray(incoming.links) ? incoming.links : existing?.links,

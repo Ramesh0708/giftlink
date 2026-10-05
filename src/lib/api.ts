@@ -1,7 +1,13 @@
 import type { StoredList, Wishlist } from '../types'
 
 async function parse<T>(res: Response): Promise<T> {
-  const data = (await res.json()) as T & { error?: string }
+  const text = await res.text()
+  let data: T & { error?: string }
+  try {
+    data = JSON.parse(text) as T & { error?: string }
+  } catch {
+    throw new Error(res.ok ? 'Unexpected response' : 'Request failed')
+  }
   if (!res.ok) throw new Error(data.error || 'Request failed')
   return data
 }
@@ -19,8 +25,13 @@ export async function publishList(list: StoredList): Promise<Wishlist> {
   return data.list
 }
 
-export async function fetchPublic(id: string): Promise<Wishlist> {
-  const res = await fetch(`/api/wishlists/${id}`)
+export async function fetchPublic(
+  id: string,
+  opts?: { peek?: boolean },
+): Promise<Wishlist> {
+  const res = await fetch(
+    `/api/wishlists/${id}${opts?.peek ? '?peek=1' : ''}`,
+  )
   const data = await parse<{ list: Wishlist }>(res)
   return data.list
 }

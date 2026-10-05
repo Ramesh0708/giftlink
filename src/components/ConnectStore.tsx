@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { importWishlist, type ImportedItem } from '../lib/api'
 import { uid } from '../lib/ids'
 import type { StoreId, StoreLink, WishItem } from '../types'
@@ -46,6 +46,14 @@ export default function ConnectStore({
     () => (fetched || []).filter((item) => picked[item.key]),
     [fetched, picked],
   )
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   async function fetchList() {
     setBusy(true)

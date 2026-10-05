@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
 import { storeMeta } from '../data/stores'
-import { publishList } from '../lib/api'
+import { fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
 import { publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
@@ -11,61 +11,111 @@ import type { StoredList, StoreLink, WishItem } from '../types'
 
 export default function Editor() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
   const [list, setList] = useState<StoredList | null>(() => loadList(id))
   const [modal, setModal] = useState<WishItem | 'new' | null>(null)
   const [connect, setConnect] = useState<'amazon' | 'flipkart' | null>(null)
   const [toast, setToast] = useState('')
   const [publishing, setPublishing] = useState(false)
-  const [shareReady, setShareReady] = useState(false)
+  const [shareReady, setShareReady] = useState(() => Boolean(loadList(id)?.published))
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const shareUrl = useMemo(
     () => (id ? publicShareUrl(window.location.origin, id) : ''),
     [id],
   )
 
+  function flash(message: string) {
+    setToast(message)
+    window.clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 3200)
+  }
+
   useEffect(() => {
-    setList(loadList(id))
+    if (sessionStorage.getItem('giftlink:creating') === id) {
+      sessionStorage.removeItem('giftlink:creating')
+    }
+    const loaded = loadList(id)
+    setList(loaded)
+    setShareReady(Boolean(loaded?.published))
+    if (!loaded || loaded.published) return
+    void fetchPublic(id, { peek: true })
+      .then(() => {
+        const latest = loadList(id)
+        if (!latest) return
+        const marked = { ...latest, published: true }
+        saveList(marked)
+        setList(marked)
+        setShareReady(true)
+      })
+      .catch(() => {})
+    return () => {
+      window.clearTimeout(toastTimer.current)
+      window.clearTimeout(syncTimer.current)
+    }
   }, [id])
 
-  function persist(next: StoredList) {
+  function persist(next: StoredList, sync: false | true | 'debounced' = false) {
     const updated = { ...next, updatedAt: new Date().toISOString() }
     saveList(updated)
     setList(updated)
+    if (sync === true) void publish(updated, { quiet: true })
+    if (sync === 'debounced' && updated.published) {
+      window.clearTimeout(syncTimer.current)
+      syncTimer.current = setTimeout(() => {
+        const latest = loadList(updated.id)
+        if (latest?.published) void publish(latest, { quiet: true })
+      }, 900)
+    }
     return updated
   }
 
-  async function publish(next = list) {
-    if (!next) return
+  async function publish(
+    next = list,
+    opts: { quiet?: boolean } = {},
+  ): Promise<boolean> {
+    if (!next) return false
     setPublishing(true)
     try {
       await publishList(next)
+      const marked = { ...next, published: true }
+      saveList(marked)
+      setList(marked)
       setShareReady(true)
-      setToast('Published — send the WhatsApp message next.')
+      if (!opts.quiet) flash('Published — send the WhatsApp message next.')
+      return true
     } catch (err) {
-      setToast(err instanceof Error ? err.message : 'Could not publish yet.')
+      flash(err instanceof Error ? err.message : 'Could not publish yet.')
+      return false
     } finally {
       setPublishing(false)
-      window.setTimeout(() => setToast(''), 3200)
     }
   }
 
   async function shareWhatsApp() {
     if (!list) return
-    await publish(list)
+    const popup = window.open('', '_blank')
+    const ok = await publish(list)
     const href = whatsappShareUrl(shareUrl, list.recipient || list.occasion)
-    window.open(href, '_blank', 'noopener,noreferrer')
+    if (!ok) {
+      popup?.close()
+      return
+    }
+    if (popup) popup.location.replace(href)
+    else window.location.assign(href)
   }
 
   async function copyLink() {
     if (!list) return
-    await publish(list)
+    const ok = await publish(list)
+    if (!ok) return
     const text = shareCopy(shareUrl, list.recipient || list.occasion)
     try {
       await navigator.clipboard.writeText(text)
-      setToast('WhatsApp-ready message copied.')
+      flash('WhatsApp-ready message copied.')
     } catch {
-      setToast(shareUrl)
+      flash(shareUrl)
     }
-    window.setTimeout(() => setToast(''), 3200)
   }
 
   if (!list) {
@@ -98,8 +148,8 @@ export default function Editor() {
   }
 
   function importFromStore(items: WishItem[], link: StoreLink) {
-    const seen = new Set(current.items.map((i) => i.url))
-    const fresh = items.filter((i) => !seen.has(i.url))
+    const seen = new Set(current.items.map((i) => i.url).filter(Boolean))
+    const fresh = items.filter((i) => !i.url || !seen.has(i.url))
     const links = [
       link,
       ...(current.links || []).filter((l) => l.store !== link.store),
@@ -110,12 +160,11 @@ export default function Editor() {
       links,
     })
     setConnect(null)
-    setToast(
+    flash(
       fresh.length
         ? `Added ${fresh.length} from ${link.name}.`
         : 'Those items are already on this list.',
     )
-    window.setTimeout(() => setToast(''), 3200)
     if (fresh.length) void publish(next)
   }
 
@@ -199,7 +248,7 @@ export default function Editor() {
             Who is this for?
             <input
               value={list.recipient}
-              onChange={(e) => persist({ ...list, recipient: e.target.value })}
+              onChange={(e) => persist({ ...list, recipient: e.target.value }, 'debounced')}
               placeholder="Your name"
             />
           </label>
@@ -207,7 +256,7 @@ export default function Editor() {
             Occasion
             <input
               value={list.occasion}
-              onChange={(e) => persist({ ...list, occasion: e.target.value })}
+              onChange={(e) => persist({ ...list, occasion: e.target.value }, 'debounced')}
               placeholder="Diwali 2026, birthday…"
             />
           </label>
@@ -216,7 +265,7 @@ export default function Editor() {
           Note at the top of the list
           <textarea
             value={list.message}
-            onChange={(e) => persist({ ...list, message: e.target.value })}
+            onChange={(e) => persist({ ...list, message: e.target.value }, 'debounced')}
           />
         </label>
         <button
@@ -298,12 +347,13 @@ export default function Editor() {
                     </button>
                     <button
                       className="btn btn-ghost btn-sm"
-                      onClick={() =>
-                        persist({
+                      onClick={() => {
+                        const next = persist({
                           ...list,
                           items: list.items.filter((i) => i.id !== item.id),
                         })
-                      }
+                        if (next.published) void publish(next, { quiet: true })
+                      }}
                     >
                       Remove
                     </button>
@@ -321,7 +371,7 @@ export default function Editor() {
           onClick={() => {
             if (confirm('Remove this list from this browser?')) {
               removeList(list.id)
-              window.location.href = '/'
+              navigate('/', { replace: true })
             }
           }}
         >
@@ -333,7 +383,7 @@ export default function Editor() {
         <ConnectStore
           storeId={connect}
           existing={connect === 'amazon' ? amazonLink : flipkartLink}
-          alreadyUrls={list.items.map((i) => i.url)}
+          alreadyUrls={list.items.map((i) => i.url).filter(Boolean)}
           onClose={() => setConnect(null)}
           onImport={importFromStore}
         />

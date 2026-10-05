@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Priority, WishItem } from '../types'
 import { STORES, storeFromUrl } from '../data/stores'
 import { previewUrl } from '../lib/api'
@@ -31,13 +31,24 @@ export default function ItemModal({
   itemRef.current = item
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const previewReq = useRef(0)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   async function fetchPreview(url = itemRef.current.url) {
     if (!url) return itemRef.current
+    const req = ++previewReq.current
     setBusy(true)
     setError('')
     try {
       const data = await previewUrl(url)
+      if (req !== previewReq.current) return itemRef.current
       const next = {
         ...itemRef.current,
         title: itemRef.current.title || data.title,
@@ -52,13 +63,14 @@ export default function ItemModal({
       }
       return next
     } catch {
+      if (req !== previewReq.current) return itemRef.current
       const next = { ...itemRef.current, store: storeFromUrl(url) }
       setItem(next)
       itemRef.current = next
       setError('Could not auto-fill that page. Add the name, photo, and price yourself.')
       return next
     } finally {
-      setBusy(false)
+      if (req === previewReq.current) setBusy(false)
     }
   }
 

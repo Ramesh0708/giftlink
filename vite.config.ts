@@ -119,7 +119,7 @@ function wishlistApi(): Plugin {
       return true
     }
     if (!req.url?.startsWith('/api/')) return false
-    const { parts } = matchApi(req.url)
+    const { parts, url } = matchApi(req.url)
     try {
       if (req.method === 'GET' && parts[0] === 'api' && parts[1] === 'stats') {
         send(res, 200, loadStats())
@@ -171,7 +171,7 @@ function wishlistApi(): Plugin {
           send(res, 404, { error: 'Wishlist not found' })
           return true
         }
-        bumpLocal('opens')
+        if (!url.searchParams.has('peek')) bumpLocal('opens')
         send(res, 200, { list: publicList(list) })
         return true
       }
@@ -192,9 +192,9 @@ function wishlistApi(): Plugin {
         const list: List = {
           id,
           ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
-          recipient: incoming.recipient || 'Someone',
-          occasion: incoming.occasion || 'Birthday',
-          message: incoming.message || '',
+          recipient: typeof incoming.recipient === 'string' ? incoming.recipient : existing?.recipient || '',
+          occasion: typeof incoming.occasion === 'string' ? incoming.occasion : existing?.occasion || 'Birthday',
+          message: typeof incoming.message === 'string' ? incoming.message : existing?.message || '',
           updatedAt: new Date().toISOString(),
           items,
           links: Array.isArray(incoming.links) ? incoming.links : existing?.links,

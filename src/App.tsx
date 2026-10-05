@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { fetchStats, hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
-import { saveList } from './lib/storage'
+import { loadList, saveList } from './lib/storage'
 import Home from './pages/Home'
 import Editor from './pages/Editor'
 import View from './pages/View'
@@ -23,9 +23,19 @@ function Logo() {
   )
 }
 
+function ShareToView() {
+  const { id = '' } = useParams()
+  return <Navigate to={`/w/${id}`} replace />
+}
+
 function NewList() {
   const navigate = useNavigate()
   useEffect(() => {
+    const pending = sessionStorage.getItem('giftlink:creating')
+    if (pending && loadList(pending)) {
+      navigate(`/me/${pending}`, { replace: true })
+      return
+    }
     const list: StoredList = {
       id: shortId(),
       ownerKey: uid(),
@@ -36,6 +46,7 @@ function NewList() {
       items: [],
     }
     saveList(list)
+    sessionStorage.setItem('giftlink:creating', list.id)
     navigate(`/me/${list.id}`, { replace: true })
   }, [navigate])
   return <p className="meta">Creating your list…</p>
@@ -80,6 +91,7 @@ export default function App() {
         <Route path="/new" element={<NewList />} />
         <Route path="/me/:id" element={<Editor />} />
         <Route path="/w/:id" element={<View />} />
+        <Route path="/s/:id" element={<ShareToView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <footer className="site credits">
