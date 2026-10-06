@@ -4,6 +4,8 @@ import { fetchStats, hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
 import { loadList, saveList } from './lib/storage'
+import AnimatedCounter from './components/AnimatedCounter'
+import ScrollProgress from './components/ScrollProgress'
 import Home from './pages/Home'
 import Editor from './pages/Editor'
 import View from './pages/View'
@@ -69,6 +71,7 @@ export default function App() {
 
   return (
     <div className="wrap">
+      <ScrollProgress />
       <nav className="nav">
         <Link className="brand" to="/">
           <Logo />
@@ -98,7 +101,7 @@ export default function App() {
       <footer className="site credits">
         {visits != null && (
           <>
-            {visits.toLocaleString()} visits
+            <AnimatedCounter value={visits} /> visits
             {' · '}
           </>
         )}

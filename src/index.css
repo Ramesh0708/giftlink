@@ -493,6 +493,107 @@ footer.credits {
   text-align: center;
 }
 
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--wine);
+  transform-origin: left center;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.counter {
+  display: inline-flex;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: -0.12em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--ink);
+}
+.counter-digit {
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+.counter-digit > span {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.counter-digit span span,
+.counter-sep {
+  height: 1em;
+  line-height: 1;
+  display: block;
+}
+
+.step-player { display: grid; gap: 14px; max-width: 640px; }
+.step-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.step-play,
+.step-pip {
+  border: 0;
+  cursor: pointer;
+  height: 36px;
+  border-radius: 999px;
+  padding: 0;
+}
+.step-play {
+  min-width: 72px;
+  padding: 0 14px;
+  background: var(--wine);
+  color: #fff8ee;
+  font-weight: 800;
+}
+.step-play:hover { background: var(--wine-deep); }
+.step-pip {
+  width: 12px;
+  background: #ead9c6;
+  position: relative;
+  overflow: hidden;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+.step-pip.on {
+  width: 72px;
+  background: #f3d0d6;
+}
+.step-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  background: var(--wine);
+  transform-origin: left center;
+  animation: step-fill 4.2s linear forwards;
+}
+.step-count { font-weight: 800; }
+.step-card { margin: 0; }
+.step-card:hover { transform: none; }
+
+@keyframes step-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .counter-digit > span,
+  .step-pip,
+  .step-fill { transition: none; animation: none; }
+  .step-fill { transform: none; }
+}
+
 @media (max-width: 840px) {
   .hero, .grid-3, .row-2, .link-grid { grid-template-columns: 1fr; }
   .hero-card { rotate: 0; }

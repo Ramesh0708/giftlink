@@ -1,7 +1,23 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import StepPlayer from '../components/StepPlayer'
 import { STORES } from '../data/stores'
 import { loadAllLists } from '../lib/storage'
+
+const HOW_STEPS = [
+  {
+    title: 'Connect Amazon or Flipkart',
+    body: 'Link a shared wishlist from Amazon or Flipkart, pick the gifts you want, then add them here. Or paste a single product link.',
+  },
+  {
+    title: 'Share one link',
+    body: 'Send it to family or the group chat. They see the list without needing an account.',
+  },
+  {
+    title: 'They claim a gift',
+    body: 'A friend taps “I’ll get this” so two people don’t buy the same thing. You won’t see who claimed it.',
+  },
+]
 
 export default function Home() {
   const location = useLocation()
@@ -64,32 +80,7 @@ export default function Home() {
 
       <section className="section">
         <h2>How it works</h2>
-        <div className="grid-3">
-          <article className="card">
-            <div className="step-num">1</div>
-            <h3>Connect Amazon or Flipkart</h3>
-            <p className="meta">
-              Link a shared wishlist from Amazon or Flipkart, pick the gifts you
-              want, then add them here. Or paste a single product link.
-            </p>
-          </article>
-          <article className="card">
-            <div className="step-num">2</div>
-            <h3>Share one link</h3>
-            <p className="meta">
-              Send it to family or the group chat. They see the list without
-              needing an account.
-            </p>
-          </article>
-          <article className="card">
-            <div className="step-num">3</div>
-            <h3>They claim a gift</h3>
-            <p className="meta">
-              A friend taps “I’ll get this” so two people don’t buy the same
-              thing. You won’t see who claimed it.
-            </p>
-          </article>
-        </div>
+        <StepPlayer steps={HOW_STEPS} />
       </section>
 
       <section className="section">
