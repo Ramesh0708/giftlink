@@ -186,13 +186,14 @@ h3 { font-size: 1.15rem; }
 }
 .hero-item {
   display: grid;
-  grid-template-columns: 72px 1fr auto;
+  grid-template-columns: 84px 1fr auto;
   gap: 12px;
   align-items: center;
   padding: 12px;
   border-radius: 18px;
 }
 .hero-item + .hero-item { border-top: 1px solid var(--line); }
+.hero-item .thumb { width: 84px; height: 84px; object-position: center; }
 .thumb {
   width: 72px;
   height: 72px;

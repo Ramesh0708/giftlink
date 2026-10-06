@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^11.0.3",
+    "framer-motion": "^14.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"
