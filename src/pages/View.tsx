@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
 import { money } from '../lib/format'
+import { displayNote } from '../lib/note'
 import { publicShareUrl, whatsappForwardUrl } from '../lib/share'
 import type { Wishlist } from '../types'
 
@@ -80,14 +81,15 @@ export default function View() {
   if (!list) return <p className="meta">Loading wishlist…</p>
 
   const openCount = list.items.filter((i) => !i.reservedBy).length
+  const who = list.recipient.trim()
 
   return (
     <section>
       <div className="toolbar">
         <div>
           <p className="eyebrow">{list.occasion}</p>
-          <h1>Gifts for {list.recipient || 'someone lovely'}</h1>
-          <p className="lede">{list.message}</p>
+          <h1>Gifts for {who || 'someone lovely'}</h1>
+          <p className="lede">{displayNote(list.message, who)}</p>
           <p className="meta">
             {openCount} of {list.items.length} still free to claim. They won’t
             see who said they’d buy it.

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { fetchStats, hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
+import { defaultNote } from './lib/note'
 import { loadList, saveList } from './lib/storage'
 import Home from './pages/Home'
 import Editor from './pages/Editor'
@@ -41,7 +42,7 @@ function NewList() {
       ownerKey: uid(),
       recipient: '',
       occasion: 'Diwali 2026',
-      message: 'If you were going to get me something this festive season, I’d love one of these — buy it in the Amazon/Flipkart sale if you can.',
+      message: defaultNote(''),
       updatedAt: new Date().toISOString(),
       items: [],
     }

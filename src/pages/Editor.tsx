@@ -5,6 +5,7 @@ import ItemModal from '../components/ItemModal'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
+import { defaultNote, isStockNote } from '../lib/note'
 import { publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
@@ -75,6 +76,10 @@ export default function Editor() {
     opts: { quiet?: boolean } = {},
   ): Promise<boolean> {
     if (!next) return false
+    if (!next.recipient.trim()) {
+      flash('Add your name first. Friends will see “Gifts for your name”.')
+      return false
+    }
     setPublishing(true)
     try {
       await publishList(next)
@@ -195,6 +200,70 @@ export default function Editor() {
         </div>
       </div>
 
+      <div className="card form" style={{ marginBottom: 22 }}>
+        <div className="row-2">
+          <label>
+            Who is this for?
+            <input
+              value={list.recipient}
+              onChange={(e) => {
+                const recipient = e.target.value
+                persist(
+                  {
+                    ...list,
+                    recipient,
+                    message: isStockNote(list.message) ? defaultNote(recipient) : list.message,
+                  },
+                  'debounced',
+                )
+              }}
+              placeholder="Your name"
+            />
+          </label>
+          <label>
+            Occasion
+            <input
+              value={list.occasion}
+              onChange={(e) => persist({ ...list, occasion: e.target.value }, 'debounced')}
+              placeholder="Diwali 2026, birthday…"
+            />
+          </label>
+        </div>
+        <p className="meta">
+          Friends see “Gifts for {list.recipient.trim() || 'your name'}”.
+        </p>
+        <label>
+          Note at the top of the list
+          <textarea
+            value={list.message}
+            onChange={(e) => persist({ ...list, message: e.target.value }, 'debounced')}
+          />
+        </label>
+        <button
+          className="btn btn-sage"
+          disabled={publishing}
+          onClick={() => void publish()}
+        >
+          {publishing ? 'Publishing…' : 'Publish so friends can see it'}
+        </button>
+        {shareReady && (
+          <div className="share-bar">
+            <p className="meta">
+              List is live. Send this — it already includes the sale note and your
+              <code>/w/</code> link.
+            </p>
+            <div className="nav-actions">
+              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                Send on WhatsApp
+              </button>
+              <button className="btn btn-ghost" onClick={() => void copyLink()}>
+                Copy message
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="card note" style={{ marginBottom: 22 }}>
         <strong>Do this in order</strong>
         <ol className="guide-ol">
@@ -240,57 +309,6 @@ export default function Editor() {
             {flipkartLink ? 'Update Flipkart list' : 'Connect Flipkart'}
           </button>
         </article>
-      </div>
-
-      <div className="card form" style={{ marginBottom: 22 }}>
-        <div className="row-2">
-          <label>
-            Who is this for?
-            <input
-              value={list.recipient}
-              onChange={(e) => persist({ ...list, recipient: e.target.value }, 'debounced')}
-              placeholder="Your name"
-            />
-          </label>
-          <label>
-            Occasion
-            <input
-              value={list.occasion}
-              onChange={(e) => persist({ ...list, occasion: e.target.value }, 'debounced')}
-              placeholder="Diwali 2026, birthday…"
-            />
-          </label>
-        </div>
-        <label>
-          Note at the top of the list
-          <textarea
-            value={list.message}
-            onChange={(e) => persist({ ...list, message: e.target.value }, 'debounced')}
-          />
-        </label>
-        <button
-          className="btn btn-sage"
-          disabled={publishing}
-          onClick={() => void publish()}
-        >
-          {publishing ? 'Publishing…' : 'Publish so friends can see it'}
-        </button>
-        {shareReady && (
-          <div className="share-bar">
-            <p className="meta">
-              List is live. Send this — it already includes the sale note and your
-              <code>/w/</code> link.
-            </p>
-            <div className="nav-actions">
-              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                Send on WhatsApp
-              </button>
-              <button className="btn btn-ghost" onClick={() => void copyLink()}>
-                Copy message
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {list.items.length === 0 ? (

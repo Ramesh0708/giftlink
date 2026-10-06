@@ -137,6 +137,9 @@ export default function ConnectStore({
               placeholder={`https://www.${storeId === 'amazon' ? 'amazon.in/dp/…' : 'flipkart.com/…/p/itm…'}`}
             />
           </label>
+          <p className="meta">
+            A product link adds only that product. A shared wishlist adds the gifts on that list — not other products Amazon or Flipkart suggest.
+          </p>
           <button
             type="button"
             className="btn btn-primary"

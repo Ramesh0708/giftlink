@@ -181,7 +181,7 @@ export async function fetchProductPreview(url) {
   const finalUrl = res.url || url
   const data = extractProduct(html, finalUrl)
   if (!data.image) data.image = amazonImageFallback(finalUrl) || amazonImageFallback(url)
-  return data
+  return { ...data, url: finalUrl }
 }
 
 export { amazonAsin, amazonImageFallback }
