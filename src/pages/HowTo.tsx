@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useRegion } from '../lib/region-context'
 
 export default function HowTo() {
+  const { experience } = useRegion()
+  if (!experience) return null
+
   return (
     <section className="section">
       <p className="eyebrow">Simple walkthrough</p>
       <h1>How to use GiftLink</h1>
-      <p className="lede">
-        You make a list of gifts you want. Friends open one link, pick something,
-        and buy it on Amazon or Flipkart. Nobody has to guess — and two people
-        won’t buy the same thing.
-      </p>
+      <p className="lede">{experience.howtoLede}</p>
 
       <div className="guide-steps">
         <article className="card">
@@ -17,7 +17,7 @@ export default function HowTo() {
           <h3>Create your list</h3>
           <p className="meta">
             Tap <strong>Create wishlist</strong>. Type your name and the occasion
-            (birthday, Diwali, housewarming). This page is only on your phone —
+            ({experience.howtoOccasion}). This page is only on your phone —
             friends never see the editor.
           </p>
         </article>
@@ -26,9 +26,9 @@ export default function HowTo() {
           <div className="step-num">2</div>
           <h3>Add gifts (easiest way)</h3>
           <p className="meta">
-            Open Amazon, Flipkart, or any shop. Copy the product link from the
-            address bar. Tap <strong>Add gift</strong>, paste the link, wait a
-            moment for the name and photo, then save.
+            Open {experience.howtoShops}. Copy the product link from the address
+            bar. Tap <strong>Add gift</strong>, paste the link, wait a moment for
+            the name and photo, then save.
           </p>
           <p className="meta">
             Tip: paste the full <code>https://</code> product page, not a search
@@ -38,23 +38,32 @@ export default function HowTo() {
 
         <article className="card">
           <div className="step-num">3</div>
-          <h3>Or connect a whole Amazon / Flipkart list</h3>
-          <p className="meta">
-            Those shops don’t let apps log into your account. Instead:
-          </p>
+          <h3>
+            {experience.showFlipkart
+              ? 'Or connect a whole Amazon / Flipkart list'
+              : 'Or connect a whole Amazon list'}
+          </h3>
+          <p className="meta">Those shops don’t let apps log into your account. Instead:</p>
           <ol className="guide-ol">
             <li>
               Amazon: Wish List → your list → <strong>Share</strong> → Anyone with
               the link → copy.
             </li>
+            {experience.showFlipkart && (
+              <li>
+                Flipkart: Wishlist → <strong>Share</strong>. If that fails, copy a
+                few product links instead.
+              </li>
+            )}
             <li>
-              Flipkart: Wishlist → <strong>Share</strong>. If that fails, copy a
-              few product links instead.
-            </li>
-            <li>
-              In GiftLink tap <strong>Connect Amazon</strong> or{' '}
-              <strong>Connect Flipkart</strong>, paste, fetch, tick the items you
-              want.
+              In GiftLink tap <strong>Connect Amazon</strong>
+              {experience.showFlipkart ? (
+                <>
+                  {' '}
+                  or <strong>Connect Flipkart</strong>
+                </>
+              ) : null}
+              , paste, fetch, tick the items you want.
             </li>
           </ol>
         </article>
@@ -62,12 +71,7 @@ export default function HowTo() {
         <article className="card">
           <div className="step-num">4</div>
           <h3>Publish and send the share link</h3>
-          <p className="meta">
-            Tap <strong>Publish so friends can see it</strong>, then{' '}
-            <strong>WhatsApp</strong>. The chat gets a picture card plus a short
-            message. Don’t send the <code>/me/</code> editor link — that’s only
-            for you.
-          </p>
+          <p className="meta">{experience.howtoSend}</p>
         </article>
 
         <article className="card">
@@ -75,7 +79,7 @@ export default function HowTo() {
           <h3>What friends do</h3>
           <p className="meta">
             They type their name, tap <strong>I’ll get this</strong> so nobody
-            else picks the same gift, then tap <strong>Buy on Amazon / Flipkart</strong>.
+            else picks the same gift, then tap <strong>{experience.howtoBuy}</strong>.
             You won’t see who claimed it, so the surprise stays.
           </p>
         </article>

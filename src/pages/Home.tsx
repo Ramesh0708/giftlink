@@ -2,47 +2,12 @@ import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, useAnimation, useReducedMotion } from 'framer-motion'
 import StepPlayer from '../components/StepPlayer'
-import { STORES } from '../data/stores'
+import { storeMeta } from '../data/stores'
+import { useRegion } from '../lib/region-context'
 import { loadAllLists } from '../lib/storage'
 
-const HOW_STEPS = [
-  {
-    title: 'Connect Amazon or Flipkart',
-    body: 'Link a shared wishlist from Amazon or Flipkart, pick the gifts you want, then add them here. Or paste a single product link.',
-  },
-  {
-    title: 'Share one link',
-    body: 'Send it to family or the group chat. They see the list without needing an account.',
-  },
-  {
-    title: 'They claim a gift',
-    body: 'A friend taps “I’ll get this” so two people don’t buy the same thing. You won’t see who claimed it.',
-  },
-]
-
-const HERO_GIFTS = [
-  {
-    title: 'Noise-cancelling headphones',
-    store: 'Amazon',
-    photo: '/photos/headphones.jpg',
-    pill: '₹7,999',
-  },
-  {
-    title: 'Forest green hoodie',
-    store: 'Myntra',
-    photo: '/photos/hoodie.jpg',
-    pill: 'Riya’s getting this',
-    taken: true,
-  },
-  {
-    title: 'Cast iron dosa tawa',
-    store: 'Flipkart',
-    photo: '/photos/tawa.jpg',
-    pill: '₹1,249',
-  },
-]
-
 export default function Home() {
+  const { experience } = useRegion()
   const location = useLocation()
   const mine = useMemo(() => loadAllLists(), [location.key])
   const reduce = useReducedMotion()
@@ -65,14 +30,15 @@ export default function Home() {
     }
   }, [card, reduce])
 
+  if (!experience) return null
+
+  const featured = experience.storeIds.map((id) => storeMeta(id))
+
   return (
     <>
       <aside className="sale-banner">
-        <strong>Sale week is here.</strong> Amazon Great Indian Festival opens 8
-        Oct (Prime 7 Oct). Flipkart Big Billion Days opens 9 Oct (Plus 8 Oct).
-        Add gifts now so people can buy at sale price — not guess on Diwali
-        (8 Nov).
-        <Link to="/new">Make a Diwali list</Link>
+        <strong>{experience.bannerLead}</strong> {experience.bannerBody}{' '}
+        <Link to="/new">{experience.bannerCta}</Link>
       </aside>
       <section className="hero">
         <motion.div
@@ -82,11 +48,7 @@ export default function Home() {
         >
           <p className="eyebrow">Share what you actually want</p>
           <h1>Gifts without the awkward guessing.</h1>
-          <p className="lede">
-            Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop.
-            Connect a shared store list, send one WhatsApp link, and friends can
-            reserve a gift so nobody doubles up.
-          </p>
+          <p className="lede">{experience.lede}</p>
           <p>
             <Link className="btn btn-primary" to="/new">
               Start a wishlist
@@ -102,7 +64,7 @@ export default function Home() {
           initial={reduce ? false : { opacity: 0, y: 22 }}
           animate={reduce ? { opacity: 1, y: 0 } : card}
         >
-          {HERO_GIFTS.map((gift, index) => (
+          {experience.heroGifts.map((gift, index) => (
             <motion.div
               className="hero-item"
               key={gift.title}
@@ -123,7 +85,7 @@ export default function Home() {
 
       <section className="section">
         <h2>How it works</h2>
-        <StepPlayer steps={HOW_STEPS} />
+        <StepPlayer steps={experience.steps} />
       </section>
 
       <section className="section">
@@ -132,7 +94,7 @@ export default function Home() {
           Add items from these shops — or anywhere else with a product URL.
         </p>
         <div className="store-row">
-          {STORES.filter((s) => s.id !== 'other').map((s, index) => (
+          {featured.map((s, index) => (
             <motion.span
               className="store-chip"
               key={s.id}
@@ -150,9 +112,7 @@ export default function Home() {
 
       <section className="section">
         <div className="note">
-          Amazon and Flipkart don’t allow apps to sign into your shopping
-          account. Connect them with a shared wishlist link, or paste product
-          URLs. GiftLink never asks for those passwords.
+          {experience.shopNote}
         </div>
       </section>
 
@@ -176,8 +136,15 @@ export default function Home() {
       )}
 
       <footer className="site">
-        Stuck? Read <Link to="/how-to">How to use GiftLink</Link> — three minutes,
-        then send one WhatsApp message.
+        {experience.footer.includes('How to use GiftLink') ? (
+          <>
+            {experience.footer.split('How to use GiftLink')[0]}
+            <Link to="/how-to">How to use GiftLink</Link>
+            {experience.footer.split('How to use GiftLink')[1]}
+          </>
+        ) : (
+          experience.footer
+        )}
       </footer>
     </>
   )

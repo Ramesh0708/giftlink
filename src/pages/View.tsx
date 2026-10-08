@@ -4,7 +4,8 @@ import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
 import { money } from '../lib/format'
 import { displayNote } from '../lib/note'
-import { publicShareUrl, whatsappForwardUrl } from '../lib/share'
+import { useRegion } from '../lib/region-context'
+import { forwardCopy, publicShareUrl, whatsappForwardUrl } from '../lib/share'
 import type { Wishlist } from '../types'
 
 const NAME_KEY = 'giftlink:gifterName'
@@ -15,6 +16,8 @@ export default function View() {
   const [error, setError] = useState('')
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || '')
   const [busy, setBusy] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const { experience } = useRegion()
 
   useEffect(() => {
     let live = true
@@ -82,6 +85,17 @@ export default function View() {
 
   const openCount = list.items.filter((i) => !i.reservedBy).length
   const who = list.recipient.trim()
+  const preferWhatsApp = experience?.preferWhatsApp ?? false
+  const shareText = forwardCopy(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)
+
+  async function copyForward() {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
 
   return (
     <section>
@@ -95,31 +109,50 @@ export default function View() {
             see who said they’d buy it.
           </p>
         </div>
-        <a
-          className="btn btn-whatsapp"
-          href={whatsappForwardUrl(
-            publicShareUrl(window.location.origin, id),
-            list.recipient,
-            list.occasion,
+        <div className="nav-actions">
+          {preferWhatsApp ? (
+            <>
+              <a
+                className="btn btn-whatsapp"
+                href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Forward on WhatsApp
+              </a>
+              <button type="button" className="btn btn-ghost" onClick={() => void copyForward()}>
+                {copied ? 'Copied' : 'Copy message'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn btn-primary" onClick={() => void copyForward()}>
+                {copied ? 'Copied' : 'Copy message'}
+              </button>
+              <a
+                className="btn btn-whatsapp"
+                href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp
+              </a>
+            </>
           )}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Forward on WhatsApp
-        </a>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 22, maxWidth: 420 }}>
         <p className="meta">
-          Type your name, tap <strong>I’ll get this</strong>, then buy it on
-          Amazon or Flipkart. They won’t see who claimed which gift.
+          {experience?.gifterHint ??
+            'Type your name, tap I’ll get this, then buy it from the product link. They won’t see who claimed which gift.'}
         </p>
         <label>
           Your name (so the group doesn’t double-buy)
           <input
             value={name}
             onChange={(e) => remember(e.target.value)}
-            placeholder="e.g. Arjun"
+            placeholder={experience?.nameExample ?? 'Your name'}
           />
         </label>
         {error && <p className="meta">{error}</p>}

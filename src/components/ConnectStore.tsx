@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { importWishlist, type ImportedItem } from '../lib/api'
+import { currencyFromUrl, money } from '../lib/format'
 import { uid } from '../lib/ids'
+import { useRegion } from '../lib/region-context'
 import type { StoreId, StoreLink, WishItem } from '../types'
 
 const STORES = [
@@ -33,7 +35,9 @@ export default function ConnectStore({
   onClose: () => void
   onImport: (items: WishItem[], link: StoreLink) => void
 }) {
+  const { experience } = useRegion()
   const store = STORES.find((s) => s.id === storeId)!
+  const fallbackCurrency = experience?.currency ?? (storeId === 'flipkart' ? 'INR' : 'USD')
   const [url, setUrl] = useState(existing?.url || '')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -87,7 +91,7 @@ export default function ConnectStore({
       url: item.url,
       image: item.image || '',
       price: item.price,
-      currency: 'INR',
+      currency: currencyFromUrl(item.url, fallbackCurrency),
       store: (item.store as StoreId) || storeId,
       notes: '',
       priority: 'want',
@@ -126,7 +130,11 @@ export default function ConnectStore({
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder={store.placeholder}
+              placeholder={
+                storeId === 'amazon'
+                  ? (experience?.amazonListPlaceholder ?? store.placeholder)
+                  : store.placeholder
+              }
             />
           </label>
           <label>
@@ -134,11 +142,15 @@ export default function ConnectStore({
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`https://www.${storeId === 'amazon' ? 'amazon.in/dp/…' : 'flipkart.com/…/p/itm…'}`}
+              placeholder={
+                storeId === 'flipkart'
+                  ? 'https://www.flipkart.com/…/p/itm…'
+                  : (experience?.linkPlaceholder ?? 'https://www.amazon.com/dp/…')
+              }
             />
           </label>
           <p className="meta">
-            A product link adds only that product. A shared wishlist adds the gifts on that list — not other products Amazon or Flipkart suggest.
+            A product link adds only that product. A shared wishlist adds the gifts on that list — not other products the shop suggests.
           </p>
           <button
             type="button"
@@ -187,7 +199,10 @@ export default function ConnectStore({
                   <span>
                     <strong>{item.title}</strong>
                     {item.price != null && (
-                      <span className="meta"> · ₹{item.price.toLocaleString('en-IN')}</span>
+                      <span className="meta">
+                        {' '}
+                        · {money(item.price, currencyFromUrl(item.url, fallbackCurrency))}
+                      </span>
                     )}
                   </span>
                 </label>

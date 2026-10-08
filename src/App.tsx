@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { fetchStats, hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
+import { useRegion } from './lib/region-context'
 import { loadList, saveList } from './lib/storage'
 import AnimatedCounter from './components/AnimatedCounter'
+import RegionGate from './components/RegionGate'
 import ScrollProgress from './components/ScrollProgress'
 import Home from './pages/Home'
 import Editor from './pages/Editor'
@@ -33,7 +35,9 @@ function ShareToView() {
 
 function NewList() {
   const navigate = useNavigate()
+  const { region, experience } = useRegion()
   useEffect(() => {
+    if (!region || !experience) return
     const pending = sessionStorage.getItem('giftlink:creating')
     if (pending && loadList(pending)) {
       navigate(`/me/${pending}`, { replace: true })
@@ -43,20 +47,24 @@ function NewList() {
       id: shortId(),
       ownerKey: uid(),
       recipient: '',
-      occasion: 'Diwali 2026',
-      message: defaultNote(''),
+      occasion: experience.occasion,
+      message: defaultNote('', region),
       updatedAt: new Date().toISOString(),
       items: [],
     }
     saveList(list)
     sessionStorage.setItem('giftlink:creating', list.id)
     navigate(`/me/${list.id}`, { replace: true })
-  }, [navigate])
+  }, [navigate, region, experience])
   return <p className="meta">Creating your list…</p>
 }
 
 export default function App() {
   const [visits, setVisits] = useState<number | null>(null)
+  const location = useLocation()
+  const { experience, openPicker } = useRegion()
+  const shared = location.pathname.startsWith('/w/') || location.pathname.startsWith('/s/')
+  const ready = Boolean(experience) || shared
 
   useEffect(() => {
     const key = 'giftlink:hit'
@@ -78,6 +86,9 @@ export default function App() {
           GiftLink
         </Link>
         <div className="nav-actions">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={openPicker}>
+            {experience ? experience.name : 'Region'}
+          </button>
           <Link className="btn btn-ghost btn-sm" to="/how-to">
             How to use
           </Link>
@@ -89,15 +100,18 @@ export default function App() {
           </Link>
         </div>
       </nav>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/how-to" element={<HowTo />} />
-        <Route path="/new" element={<NewList />} />
-        <Route path="/me/:id" element={<Editor />} />
-        <Route path="/w/:id" element={<View />} />
-        <Route path="/s/:id" element={<ShareToView />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {ready && (
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/how-to" element={<HowTo />} />
+          <Route path="/new" element={<NewList />} />
+          <Route path="/me/:id" element={<Editor />} />
+          <Route path="/w/:id" element={<View />} />
+          <Route path="/s/:id" element={<ShareToView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      )}
+      <RegionGate shared={shared} />
       <footer className="site credits">
         {visits != null && (
           <>

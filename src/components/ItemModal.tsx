@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Priority, WishItem } from '../types'
 import { STORES, storeFromUrl } from '../data/stores'
 import { previewUrl } from '../lib/api'
+import { CURRENCIES, currencyFromUrl } from '../lib/format'
 import { uid } from '../lib/ids'
+import { useRegion } from '../lib/region-context'
 
 const empty = (): WishItem => ({
   id: uid(),
@@ -26,7 +28,10 @@ export default function ItemModal({
   onClose: () => void
   onSave: (item: WishItem) => void
 }) {
-  const [item, setItem] = useState<WishItem>(initial ? { ...initial } : empty())
+  const { experience } = useRegion()
+  const [item, setItem] = useState<WishItem>(() =>
+    initial ? { ...initial } : { ...empty(), currency: experience?.currency ?? 'INR' },
+  )
   const itemRef = useRef(item)
   itemRef.current = item
   const [busy, setBusy] = useState(false)
@@ -54,6 +59,7 @@ export default function ItemModal({
         title: itemRef.current.title || data.title,
         image: data.image || itemRef.current.image,
         price: itemRef.current.price ?? data.price,
+        currency: currencyFromUrl(url, experience?.currency ?? itemRef.current.currency),
         store: storeFromUrl(url),
       }
       setItem(next)
@@ -64,7 +70,11 @@ export default function ItemModal({
       return next
     } catch {
       if (req !== previewReq.current) return itemRef.current
-      const next = { ...itemRef.current, store: storeFromUrl(url) }
+      const next = {
+        ...itemRef.current,
+        currency: currencyFromUrl(url, experience?.currency ?? itemRef.current.currency),
+        store: storeFromUrl(url),
+      }
       setItem(next)
       itemRef.current = next
       setError('Could not auto-fill that page. Add the name, photo, and price yourself.')
@@ -104,8 +114,8 @@ export default function ItemModal({
           </button>
         </div>
         <p className="meta">
-          Copy the product link from your browser address bar on Amazon, Flipkart,
-          or any shop, then paste it here.
+          {experience?.addGiftHint ??
+            'Copy the product link from the shop, then paste it here.'}
         </p>
         <form className="form" onSubmit={(e) => void submit(e)}>
           <label>
@@ -121,7 +131,7 @@ export default function ItemModal({
                   window.setTimeout(() => void fetchPreview(pasted), 50)
                 }
               }}
-              placeholder="https://www.amazon.in/… or Flipkart, Myntra…"
+              placeholder={experience?.linkPlaceholder ?? 'https://…'}
             />
           </label>
           <button
@@ -151,7 +161,7 @@ export default function ItemModal({
               placeholder="e.g. Kindred spirits mug"
             />
           </label>
-          <div className="row-2">
+          <div className="row-3">
             <label>
               Price
               <input
@@ -165,12 +175,29 @@ export default function ItemModal({
               />
             </label>
             <label>
+              Currency
+              <select
+                value={item.currency}
+                onChange={(e) => set('currency', e.target.value as WishItem['currency'])}
+              >
+                {CURRENCIES.map((currency) => (
+                  <option key={currency.id} value={currency.id}>
+                    {currency.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Store
               <select
                 value={item.store}
                 onChange={(e) => set('store', e.target.value as WishItem['store'])}
               >
-                {STORES.map((s) => (
+                {STORES.filter((store) => {
+                  const featured = experience?.storeIds
+                  if (!featured) return true
+                  return featured.includes(store.id) || store.id === 'other' || store.id === item.store
+                }).map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>

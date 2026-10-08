@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
+import { isDefaultOccasion } from '../data/regions'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
 import { defaultNote, isStockNote } from '../lib/note'
+import { useRegion } from '../lib/region-context'
 import { publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
@@ -13,6 +15,7 @@ import type { StoredList, StoreLink, WishItem } from '../types'
 export default function Editor() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const { region, experience } = useRegion()
   const [list, setList] = useState<StoredList | null>(() => loadList(id))
   const [modal, setModal] = useState<WishItem | 'new' | null>(null)
   const [connect, setConnect] = useState<'amazon' | 'flipkart' | null>(null)
@@ -56,6 +59,19 @@ export default function Editor() {
     }
   }, [id])
 
+  useEffect(() => {
+    if (!region || !experience) return
+    setList((cur) => {
+      if (!cur || cur.items.length > 0 || cur.recipient.trim()) return cur
+      const occasion = isDefaultOccasion(cur.occasion) ? experience.occasion : cur.occasion
+      const message = isStockNote(cur.message) ? defaultNote(cur.recipient, region) : cur.message
+      if (occasion === cur.occasion && message === cur.message) return cur
+      const next = { ...cur, occasion, message, updatedAt: new Date().toISOString() }
+      saveList(next)
+      return next
+    })
+  }, [region, experience])
+
   function persist(next: StoredList, sync: false | true | 'debounced' = false) {
     const updated = { ...next, updatedAt: new Date().toISOString() }
     saveList(updated)
@@ -87,7 +103,7 @@ export default function Editor() {
       saveList(marked)
       setList(marked)
       setShareReady(true)
-      if (!opts.quiet) flash('Published — send the WhatsApp message next.')
+      if (!opts.quiet) flash(experience?.publishFlash ?? 'Published.')
       return true
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Could not publish yet.')
@@ -117,7 +133,7 @@ export default function Editor() {
     const text = shareCopy(shareUrl, list.recipient || list.occasion)
     try {
       await navigator.clipboard.writeText(text)
-      flash('WhatsApp-ready message copied.')
+      flash(experience?.copiedFlash ?? 'Message copied.')
     } catch {
       flash(shareUrl)
     }
@@ -175,6 +191,8 @@ export default function Editor() {
 
   const amazonLink = (list.links || []).find((l) => l.store === 'amazon')
   const flipkartLink = (list.links || []).find((l) => l.store === 'flipkart')
+  const preferWhatsApp = experience?.preferWhatsApp ?? false
+  const showFlipkart = (experience?.showFlipkart ?? false) || Boolean(flipkartLink)
 
   return (
     <section>
@@ -188,12 +206,25 @@ export default function Editor() {
           </p>
         </div>
         <div className="nav-actions">
-          <button className="btn btn-ghost" onClick={() => void copyLink()}>
-            Copy share text
-          </button>
-          <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-            WhatsApp
-          </button>
+          {preferWhatsApp ? (
+            <>
+              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                WhatsApp
+              </button>
+              <button className="btn btn-ghost" onClick={() => void copyLink()}>
+                Copy share text
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="btn btn-primary" onClick={() => void copyLink()}>
+                Copy message
+              </button>
+              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                WhatsApp
+              </button>
+            </>
+          )}
           <button className="btn btn-primary" onClick={() => setModal('new')}>
             Add gift
           </button>
@@ -212,7 +243,9 @@ export default function Editor() {
                   {
                     ...list,
                     recipient,
-                    message: isStockNote(list.message) ? defaultNote(recipient) : list.message,
+                    message: isStockNote(list.message)
+                      ? defaultNote(recipient, region ?? 'india')
+                      : list.message,
                   },
                   'debounced',
                 )
@@ -225,7 +258,7 @@ export default function Editor() {
             <input
               value={list.occasion}
               onChange={(e) => persist({ ...list, occasion: e.target.value }, 'debounced')}
-              placeholder="Diwali 2026, birthday…"
+              placeholder={experience?.occasionHint ?? 'Birthday, holiday…'}
             />
           </label>
         </div>
@@ -248,17 +281,27 @@ export default function Editor() {
         </button>
         {shareReady && (
           <div className="share-bar">
-            <p className="meta">
-              List is live. Send this — it already includes the sale note and your
-              <code>/w/</code> link.
-            </p>
+            <p className="meta">{experience?.liveHint}</p>
             <div className="nav-actions">
-              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                Send on WhatsApp
-              </button>
-              <button className="btn btn-ghost" onClick={() => void copyLink()}>
-                Copy message
-              </button>
+              {preferWhatsApp ? (
+                <>
+                  <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                    Send on WhatsApp
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => void copyLink()}>
+                    Copy message
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-primary" onClick={() => void copyLink()}>
+                    Copy message
+                  </button>
+                  <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+                    WhatsApp
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -268,15 +311,8 @@ export default function Editor() {
         <strong>Do this in order</strong>
         <ol className="guide-ol">
           <li>Write your name and occasion above.</li>
-          <li>
-            Tap <strong>Add gift</strong> and paste a product link from Amazon or
-            Flipkart — or connect a whole shared wishlist below.
-          </li>
-          <li>
-            Tap <strong>Publish</strong>, then <strong>WhatsApp</strong> — send the
-            ready message. Friends must open the <code>/w/…</code> link, not this
-            editor page.
-          </li>
+          <li>{experience?.editorAdd}</li>
+          <li>{experience?.editorShare}</li>
         </ol>
       </div>
 
@@ -295,33 +331,37 @@ export default function Editor() {
             {amazonLink ? 'Update Amazon list' : 'Connect Amazon'}
           </button>
         </article>
-        <article className="card store-card">
-          <div className="store-chip" style={{ border: 0, padding: 0, background: 'transparent' }}>
-            <span className="dot" style={{ background: '#2874f0' }} />
-            Flipkart
-          </div>
-          <p className="meta">
-            {flipkartLink
-              ? `Linked: ${flipkartLink.name}`
-              : 'Pull items from a shared Flipkart wishlist.'}
-          </p>
-          <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
-            {flipkartLink ? 'Update Flipkart list' : 'Connect Flipkart'}
-          </button>
-        </article>
+        {showFlipkart && (
+          <article className="card store-card">
+            <div className="store-chip" style={{ border: 0, padding: 0, background: 'transparent' }}>
+              <span className="dot" style={{ background: '#2874f0' }} />
+              Flipkart
+            </div>
+            <p className="meta">
+              {flipkartLink
+                ? `Linked: ${flipkartLink.name}`
+                : 'Pull items from a shared Flipkart wishlist.'}
+            </p>
+            <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
+              {flipkartLink ? 'Update Flipkart list' : 'Connect Flipkart'}
+            </button>
+          </article>
+        )}
       </div>
 
       {list.items.length === 0 ? (
         <div className="card empty">
           <h3>Nothing here yet</h3>
-          <p>Connect Amazon or Flipkart, or add a gift by name.</p>
+          <p>{experience?.emptyBody}</p>
           <div className="nav-actions" style={{ justifyContent: 'center' }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setConnect('amazon')}>
               Connect Amazon
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
-              Connect Flipkart
-            </button>
+            {showFlipkart && (
+              <button className="btn btn-ghost btn-sm" onClick={() => setConnect('flipkart')}>
+                Connect Flipkart
+              </button>
+            )}
             <button className="btn btn-primary btn-sm" onClick={() => setModal('new')}>
               Add your first gift
             </button>

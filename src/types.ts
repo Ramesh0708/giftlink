@@ -6,7 +6,20 @@ export type StoreId =
   | 'nykaa'
   | 'meesho'
   | 'croma'
+  | 'target'
+  | 'walmart'
+  | 'bestbuy'
+  | 'etsy'
+  | 'ebay'
+  | 'johnlewis'
+  | 'argos'
+  | 'zalando'
+  | 'shopee'
+  | 'lazada'
+  | 'rakuten'
   | 'other'
+
+export type Currency = 'INR' | 'USD' | 'EUR' | 'GBP' | 'AUD' | 'CAD' | 'SGD' | 'AED' | 'JPY'
 
 export type Priority = 'love' | 'want' | 'nice'
 
@@ -16,7 +29,7 @@ export type WishItem = {
   url: string
   image: string
   price: number | null
-  currency: 'INR' | 'USD'
+  currency: Currency
   store: StoreId
   notes: string
   priority: Priority
