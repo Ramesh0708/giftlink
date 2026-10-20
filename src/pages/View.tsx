@@ -1,8 +1,11 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import Envelope from '../components/Envelope'
+import ThemeDecor from '../components/ThemeDecor'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
 import { claimTokenFor, claimTokens, forgetClaim, rememberClaim } from '../lib/claims'
+import { envelopeKey, shouldSealEnvelope, themeForOccasion } from '../lib/delight.mjs'
 import { money } from '../lib/format'
 import { displayNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
@@ -24,6 +27,23 @@ function tapeOf(id: string) {
   return String(hash % 4)
 }
 
+function sealFor(listId: string) {
+  try {
+    return shouldSealEnvelope({
+      seen: localStorage.getItem(envelopeKey(listId)) === '1',
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      userAgent: navigator.userAgent,
+      webdriver: navigator.webdriver,
+    })
+  } catch {
+    return false
+  }
+}
+
+function reducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export default function View() {
   const { id = '' } = useParams()
   const [list, setList] = useState<Wishlist | null>(null)
@@ -31,7 +51,19 @@ export default function View() {
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) || '')
   const [busy, setBusy] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [sealed, setSealed] = useState(() => sealFor(id))
+  const [opening, setOpening] = useState(false)
+  const [celebrating, setCelebrating] = useState<string | null>(null)
+  const [canToss, setCanToss] = useState(false)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const tidyRef = useRef<(() => void) | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const { experience } = useRegion()
+
+  useEffect(() => {
+    setSealed(sealFor(id))
+    setOpening(false)
+  }, [id])
 
   useEffect(() => {
     let live = true
@@ -49,12 +81,33 @@ export default function View() {
     }
   }, [id])
 
+  useEffect(() => {
+    if (!list || sealed) return
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    if (reducedMotion()) return
+    let dead = false
+    let stop = () => {}
+    void import('../lib/toss').then((mod) => {
+      if (dead || !gridRef.current) return
+      const handle = mod.attachToss(gridRef.current, () => {})
+      tidyRef.current = handle.reset
+      stop = handle.stop
+      setCanToss(true)
+    })
+    return () => {
+      dead = true
+      stop()
+      tidyRef.current = null
+      setCanToss(false)
+    }
+  }, [list, sealed])
+
   function remember(value: string) {
     setName(value)
     localStorage.setItem(NAME_KEY, value)
   }
 
-  async function claim(itemId: string) {
+  async function claim(itemId: string, source?: HTMLElement) {
     if (!name.trim()) {
       setError('Add your name so others know it’s covered.')
       return
@@ -66,6 +119,19 @@ export default function View() {
       rememberClaim(id, itemId, result.claimToken)
       setList(result.list)
       gaEvent('claim', { listId: id })
+      if (!reducedMotion()) {
+        setCelebrating(itemId)
+        window.setTimeout(() => setCelebrating((current) => (current === itemId ? null : current)), 1700)
+        if (typeof navigator.vibrate === 'function') navigator.vibrate(16)
+        const rect = source?.getBoundingClientRect()
+        const origin = rect
+          ? {
+              x: (rect.left + rect.width / 2) / window.innerWidth,
+              y: (rect.top + rect.height / 2) / window.innerHeight,
+            }
+          : { x: 0.5, y: 0.4 }
+        void import('../lib/celebrate').then((mod) => mod.burstFrom(origin, list?.occasion || ''))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not reserve')
     } finally {
@@ -116,6 +182,32 @@ export default function View() {
   const claimedOne = list.items.some((item) => item.mine)
   const shareText = forwardCopy(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)
 
+  function rememberEnvelope() {
+    try {
+      localStorage.setItem(envelopeKey(id), '1')
+    } catch {
+      /* private mode can refuse storage */
+    }
+  }
+
+  function openEnvelope() {
+    if (opening) return
+    rememberEnvelope()
+    setOpening(true)
+    window.setTimeout(() => {
+      setSealed(false)
+      headingRef.current?.focus()
+    }, 680)
+    window.setTimeout(() => setOpening(false), 1200)
+  }
+
+  function skipEnvelope() {
+    rememberEnvelope()
+    setSealed(false)
+    setOpening(false)
+    headingRef.current?.focus()
+  }
+
   async function copyForward() {
     try {
       await navigator.clipboard.writeText(shareText)
@@ -125,11 +217,24 @@ export default function View() {
     }
   }
 
+  const theme = themeForOccasion(list.occasion)
+
   return (
-    <section className="desk">
+    <section className={`desk${sealed ? ' is-sealed' : ''}${opening ? ' is-opening' : ''}`} data-theme={theme}>
+      {sealed && (
+        <Envelope
+          name={who || 'someone lovely'}
+          occasion={list.occasion}
+          opening={opening}
+          onOpen={openEnvelope}
+          onSkip={skipEnvelope}
+        />
+      )}
+      <div className="desk-sheet" inert={sealed ? true : undefined} aria-hidden={sealed || undefined}>
       <header className="desk-note">
+        <ThemeDecor theme={theme} />
         <p className="desk-occasion">{list.occasion}</p>
-        <h1>Gifts for {who || 'someone lovely'}</h1>
+        <h1 ref={headingRef} tabIndex={-1}>Gifts for {who || 'someone lovely'}</h1>
         <p className="desk-message">{displayNote(list.message, who)}</p>
         <p className="desk-count">
           {openCount} of {list.items.length} still free to claim. They won’t
@@ -185,7 +290,15 @@ export default function View() {
           <h2>No gifts on this list yet</h2>
         </div>
       ) : (
-        <div className="desk-grid">
+        <>
+        {canToss && (
+          <div className="tidy-row">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => tidyRef.current?.()}>
+              Tidy up
+            </button>
+          </div>
+        )}
+        <div className="desk-grid" ref={gridRef}>
           {list.items.map((item) => {
             const store = storeMeta(item.store)
             const claimed = Boolean(item.claimed || item.reservedBy)
@@ -213,6 +326,16 @@ export default function View() {
                     <div className="polaroid-photo" />
                   )}
                   {claimed && <span className="stamp">Claimed</span>}
+                  {celebrating === item.id && (
+                    <div className="unwrap" role="status">
+                      <div className="giftbox" aria-hidden="true">
+                        <span className="giftbox-bow" />
+                        <span className="giftbox-lid" />
+                        <span className="giftbox-base" />
+                      </div>
+                      <p>You’re getting this</p>
+                    </div>
+                  )}
                 </div>
                 <div className="polaroid-caption">
                   <p className="polaroid-store">{store.name}</p>
@@ -239,7 +362,7 @@ export default function View() {
                         type="button"
                         className="gift-tag"
                         disabled={busy === item.id}
-                        onClick={() => void claim(item.id)}
+                        onClick={(event) => void claim(item.id, event.currentTarget)}
                       >
                         I’ll get this
                       </button>
@@ -260,10 +383,12 @@ export default function View() {
             )
           })}
         </div>
+        </>
       )}
 
       {claimedOne && <OwnListCta id={id} afterClaim />}
       <p className="associate">As an Amazon Associate, GiftLink earns from qualifying purchases.</p>
+      </div>
     </section>
   )
 }

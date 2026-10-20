@@ -1043,7 +1043,167 @@ body:has(.desk) {
   }
   .polaroid:hover { transform: none; }
   .washi { transform: translateX(-50%); }
+  .giftbox-lid,
+  .envelope-flap,
+  .desk.is-opening .desk-sheet { animation: none; transition: none; }
 }
+
+.tidy-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+.polaroid.is-dragging { z-index: 3; transition: none; cursor: grabbing; }
+.polaroid.is-tidy { transition: transform 0.45s ease; }
+.desk.is-sealed .desk-sheet { visibility: hidden; }
+.desk-sheet { min-width: 0; }
+.envelope-back {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(rgba(92, 58, 28, 0.05) 0.7px, transparent 0.7px),
+    linear-gradient(180deg, rgba(243, 230, 208, 0.94), rgba(240, 226, 204, 0.96));
+  background-size: 3px 3px, auto;
+}
+.envelope-dialog { display: grid; justify-items: center; gap: 14px; width: min(440px, 100%); }
+.envelope {
+  position: relative;
+  width: 100%;
+  min-height: 250px;
+  padding: 78px 22px 28px;
+  border: 0;
+  background: #f4e4cb;
+  color: #2b1810;
+  box-shadow: 0 16px 30px rgba(70, 42, 18, 0.16);
+  cursor: pointer;
+  perspective: 800px;
+}
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 52%;
+  background: #e7d3b0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  transition: transform 0.65s ease;
+}
+.envelope-back.is-opening .envelope-flap { transform: rotateX(180deg); }
+.wax {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #c94560, #7d1c33 70%);
+  box-shadow: 0 6px 10px rgba(70, 20, 30, 0.25);
+  transform: translate(-50%, -50%);
+}
+.wax svg { width: 28px; height: 28px; }
+.envelope-kicker {
+  display: block;
+  color: #6e1d33;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.envelope-title {
+  display: block;
+  margin-top: 6px;
+  font-family: Caveat, "Segoe Print", "Bradley Hand", cursive;
+  font-size: clamp(2.2rem, 8vw, 3rem);
+  font-weight: 700;
+  line-height: 1;
+}
+.envelope-hint { display: block; margin-top: 10px; color: #4e382c; font-weight: 800; }
+.envelope:focus-visible,
+.envelope-skip:focus-visible {
+  outline: 3px solid #5c1a2c;
+  outline-offset: 3px;
+}
+.envelope-skip {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  color: #5c1a2c;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.motif { display: block; width: 140px; height: 40px; margin-bottom: 6px; }
+.unwrap {
+  position: absolute;
+  inset: 8px;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  background: rgba(255, 253, 248, 0.94);
+  color: #2b1810;
+  text-align: center;
+}
+.unwrap p { margin: 0; font-weight: 800; }
+.giftbox { position: relative; width: 78px; height: 70px; }
+.giftbox-base {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 38px;
+  background: #8b2942;
+}
+.giftbox-lid {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 16px;
+  height: 18px;
+  background: #a33b52;
+  transform-origin: top center;
+  animation: lid-open 0.7s ease forwards;
+}
+.giftbox-bow {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f0d56a;
+  transform: translateX(-50%);
+}
+@keyframes lid-open {
+  to { transform: translateY(-18px) rotate(-16deg); }
+}
+.desk[data-theme="diwali"] .desk-note { background: #ffe08a; box-shadow: 0 0 0 8px rgba(227, 155, 43, 0.28), 0 12px 22px rgba(70, 42, 18, 0.14); }
+.desk[data-theme="wedding"] .desk-note { background: #f8e7c4; box-shadow: 0 0 0 8px rgba(122, 31, 61, 0.16), 0 12px 22px rgba(70, 42, 18, 0.14); }
+.desk[data-theme="wedding"] .polaroid { outline: 1px solid #e7c98a; }
+.desk[data-theme="baby"] .desk-note { background: #e5f6ef; }
+.desk[data-theme="baby"] .polaroid { background: #fffdfb; }
+.desk[data-theme="birthday"] .desk-note { background: #ffe0ef; }
+.desk[data-theme="housewarming"] .desk-note { background: #f3d2b8; }
+.desk[data-theme="santa"] .desk-note { background: #e7f6ea; box-shadow: 0 0 0 8px rgba(180, 35, 42, 0.12), 0 12px 22px rgba(20, 40, 30, 0.12); }
+body:has(.desk[data-theme="diwali"]) { background-color: #f8e7c4; }
+body:has(.desk[data-theme="wedding"]) { background-color: #f8efe6; }
+body:has(.desk[data-theme="baby"]) { background-color: #f4f7fb; }
+body:has(.desk[data-theme="birthday"]) { background-color: #fff4f8; }
+body:has(.desk[data-theme="housewarming"]) { background-color: #f6e6d4; }
+body:has(.desk[data-theme="santa"]) { background-color: #f3f7fb; }
+.desk[data-theme="diwali"] .gift-tag { border-color: #c4551a; }
+.desk[data-theme="wedding"] .gift-tag { border-color: #7a1f3d; }
+.desk[data-theme="baby"] .gift-tag { border-color: #7a5ea7; }
+.desk[data-theme="birthday"] .gift-tag { border-color: #c43b6e; }
+.desk[data-theme="housewarming"] .gift-tag { border-color: #b85c38; }
+.desk[data-theme="santa"] .gift-tag { border-color: #1f6b45; }
 
 @media (max-width: 840px) {
   .hero, .grid-3, .row-2, .row-3, .link-grid, .region-grid { grid-template-columns: 1fr; }
