@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { landings } from './data/landings.mjs'
-import { track } from './lib/track'
+import { track, trackPage } from './lib/track'
 import { hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
@@ -72,6 +72,11 @@ function NewList() {
 export default function App() {
   const [visits, setVisits] = useState<number | null>(null)
   const { experience, openPicker } = useRegion()
+  const location = useLocation()
+
+  useEffect(() => {
+    trackPage(`${location.pathname}${location.search}`)
+  }, [location.pathname, location.search])
 
   useEffect(() => {
     try {

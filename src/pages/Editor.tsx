@@ -10,7 +10,7 @@ import { defaultNote, isStockNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
 import { needsShareNudge } from '../../netlify/lib/nudge.mjs'
 import { ownerEditUrl, ownerKeyFromHash, publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
-import { track } from '../lib/track'
+import { gaEvent, track } from '../lib/track'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -123,6 +123,7 @@ export default function Editor() {
     opts: { quiet?: boolean } = {},
   ): Promise<boolean> {
     if (!next) return false
+    const firstPublish = !next.published
     if (!next.items.length) {
       if (!opts.quiet) flash('Add a gift first. The list goes live as soon as you save one.')
       return false
@@ -138,6 +139,7 @@ export default function Editor() {
       }
       saveList(marked)
       setList(marked)
+      if (firstPublish) gaEvent('published', { listId: next.id })
       return true
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Could not publish yet.')
@@ -204,7 +206,9 @@ export default function Editor() {
         : [item, ...current.items],
     })
     setModal(null)
-    void publish(next)
+    void publish(next).then((ok) => {
+      if (ok && !exists) gaEvent('item', { listId: current.id })
+    })
   }
 
   function importFromStore(items: WishItem[], link: StoreLink) {
@@ -225,7 +229,13 @@ export default function Editor() {
         ? `Added ${fresh.length} from ${link.name}.`
         : 'Those items are already on this list.',
     )
-    if (fresh.length) void publish(next)
+    if (fresh.length) {
+      const added = fresh.length
+      void publish(next).then((ok) => {
+        if (!ok) return
+        for (let i = 0; i < added; i += 1) gaEvent('item', { listId: current.id })
+      })
+    }
   }
 
   const amazonLink = (list.links || []).find((l) => l.store === 'amazon')

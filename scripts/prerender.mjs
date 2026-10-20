@@ -5,6 +5,12 @@ import { landings } from '../src/data/landings.mjs'
 const origin = (process.env.URL || 'https://wiishlist.netlify.app').replace(/\/$/, '')
 const dist = path.resolve('dist')
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8')
+if (!template.includes('content="R_MrDCaUuDRcZ3Tv2mJDmOh0th9WZMI8sY4bZ2XHJPc"')) {
+  throw new Error('Built HTML is missing the Google site verification tag')
+}
+if (!template.includes('G-EP4MKTGEZ4') || !template.includes('googletagmanager.com/gtag/js')) {
+  throw new Error('Built HTML is missing Google Analytics')
+}
 
 const home = {
   path: '/',
@@ -125,7 +131,14 @@ function page(source, spec) {
   return html
 }
 
-fs.writeFileSync(path.join(dist, 'index.html'), page(template, home))
+const homeHtml = page(template, home)
+if (!homeHtml.includes('name="google-site-verification"')) {
+  throw new Error('Prerendered home is missing the Google site verification tag')
+}
+if (!homeHtml.includes('G-EP4MKTGEZ4')) {
+  throw new Error('Prerendered home is missing Google Analytics')
+}
+fs.writeFileSync(path.join(dist, 'index.html'), homeHtml)
 fs.mkdirSync(path.join(dist, 'how-to'), { recursive: true })
 fs.writeFileSync(path.join(dist, 'how-to', 'index.html'), page(template, howto))
 
@@ -141,6 +154,17 @@ for (const landing of landings) {
       body: landingBody(landing),
     }),
   )
+}
+
+const sample = landings[0]
+if (sample) {
+  const sampleHtml = fs.readFileSync(
+    path.join(dist, sample.path.replace(/^\//, ''), 'index.html'),
+    'utf8',
+  )
+  if (!sampleHtml.includes('googletagmanager.com/gtag/js?id=G-EP4MKTGEZ4')) {
+    throw new Error('Prerendered landing page is missing Google Analytics')
+  }
 }
 
 const urls = ['/', '/how-to', ...landings.map((landing) => landing.path)]
