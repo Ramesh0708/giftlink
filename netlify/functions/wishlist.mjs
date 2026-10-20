@@ -1,8 +1,10 @@
 import { getStore } from '@netlify/blobs'
+import { amazonAssociateTag, tagAmazonLinks } from '../lib/affiliate.mjs'
 import { bumpStat } from '../lib/stats-store.mjs'
 import {
   HttpError,
-  mergeItems,
+  nextStoredList,
+  noteOpen,
   presentList,
   reserve,
   tokensFromHeader,
@@ -45,8 +47,14 @@ export default async (req) => {
         return json(200, { list: presentList(list, { owner: true }), owner: true })
       }
       const peek = new URL(req.url).searchParams.has('peek')
-      if (!peek) void bumpStat('opens')
-      return json(200, { list: presentList(list, { tokens: claimTokens(req) }) })
+      if (!peek) {
+        noteOpen(list)
+        await store.setJSON(id, list)
+        await bumpStat('opens')
+      }
+      return json(200, {
+        list: tagAmazonLinks(presentList(list, { tokens: claimTokens(req) }), amazonAssociateTag()),
+      })
     }
 
     if (req.method === 'PUT' && id) {
@@ -56,18 +64,13 @@ export default async (req) => {
       if (existing && existing.ownerKey !== ownerKey) {
         return json(403, { error: 'Wrong edit key' })
       }
-      if (!existing) void bumpStat('lists')
-      const items = mergeItems(existing?.items, Array.isArray(incoming.items) ? incoming.items : [])
-      const list = {
-        id,
-        ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
-        recipient: typeof incoming.recipient === 'string' ? incoming.recipient : existing?.recipient || '',
-        occasion: typeof incoming.occasion === 'string' ? incoming.occasion : existing?.occasion || 'Birthday',
-        message: typeof incoming.message === 'string' ? incoming.message : existing?.message || '',
-        updatedAt: new Date().toISOString(),
-        items,
-        links: Array.isArray(incoming.links) ? incoming.links : existing?.links,
+      const written = nextStoredList(existing, incoming, id, ownerKey)
+      const list = written.list
+      if (written.created) {
+        await bumpStat('lists')
+        await bumpStat('published')
       }
+      if (written.added) await bumpStat('items', written.added)
       await store.setJSON(id, list)
       const owner = Boolean(ownerKey) && ownerKey === list.ownerKey
       return json(200, { list: presentList(list, { owner }), owner })
@@ -82,6 +85,7 @@ export default async (req) => {
         const claimToken = reserve(list, body)
         tokens.add(claimToken)
         await store.setJSON(id, list)
+        await bumpStat('claims')
         return json(200, {
           list: presentList(list, { tokens }),
           claimToken,

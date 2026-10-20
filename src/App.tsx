@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { landings } from './data/landings.mjs'
+import { track } from './lib/track'
 import { hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
@@ -14,6 +16,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Editor = lazy(() => import('./pages/Editor'))
 const View = lazy(() => import('./pages/View'))
 const HowTo = lazy(() => import('./pages/HowTo'))
+const Landing = lazy(() => import('./pages/Landing'))
 
 function Logo() {
   return (
@@ -36,6 +39,7 @@ function ShareToView() {
 
 function NewList() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const { region, experience } = useRegion()
   useEffect(() => {
     if (!region || !experience) return
@@ -44,6 +48,8 @@ function NewList() {
       navigate(`/me/${pending}`, { replace: true })
       return
     }
+    const ref = params.get('ref') || ''
+    const referredBy = /^[a-z0-9]{6,24}$/i.test(ref) ? ref : ''
     const list: StoredList = {
       id: shortId(),
       ownerKey: uid(),
@@ -52,11 +58,14 @@ function NewList() {
       message: defaultNote('', region),
       updatedAt: new Date().toISOString(),
       items: [],
+      referredBy: referredBy || undefined,
     }
     saveList(list)
     sessionStorage.setItem('giftlink:creating', list.id)
+    track('created', { listId: list.id })
+    if (referredBy) track('ref', { listId: list.id, ref: referredBy })
     navigate(`/me/${list.id}`, { replace: true })
-  }, [navigate, region, experience])
+  }, [navigate, region, experience, params])
   return <p className="meta">Creating your list…</p>
 }
 
@@ -115,6 +124,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/how-to" element={<HowTo />} />
+          {landings.map((page) => (
+            <Route key={page.path} path={page.path} element={<Landing />} />
+          ))}
           <Route path="/new" element={<NewList />} />
           <Route path="/me/:id" element={<Editor />} />
           <Route path="/w/:id" element={<View />} />
@@ -133,6 +145,7 @@ export default function App() {
         Idea by <strong>Rishikesh Kunte</strong>
         {' · '}
         Built by <strong>Ramesh Choudhary</strong>
+        <span className="associate">As an Amazon Associate, GiftLink earns from qualifying purchases.</span>
       </footer>
     </div>
   )

@@ -36,26 +36,51 @@ function dbPath() {
   return path.resolve('.data/wishlists.json')
 }
 
+function oncePath() {
+  return path.resolve('.data/stats-once.json')
+}
+
+async function statsLib() {
+  return import('./netlify/lib/stats-store.mjs')
+}
+
 function loadStats() {
   try {
-    return JSON.parse(fs.readFileSync(statsPath(), 'utf8')) as {
-      visits: number
-      lists: number
-      opens: number
-    }
+    return JSON.parse(fs.readFileSync(statsPath(), 'utf8')) as Record<string, number>
   } catch {
-    return { visits: 0, lists: 0, opens: 0 }
+    return {}
   }
 }
 
-function saveStats(stats: { visits: number; lists: number; opens: number }) {
+function saveStats(stats: Record<string, number>) {
   fs.mkdirSync(path.dirname(statsPath()), { recursive: true })
   fs.writeFileSync(statsPath(), JSON.stringify(stats, null, 2))
 }
 
-function bumpLocal(field: 'visits' | 'lists' | 'opens') {
-  const stats = loadStats()
-  stats[field] += 1
+function seenOnce(key: string) {
+  let data: Record<string, number> = {}
+  try {
+    data = JSON.parse(fs.readFileSync(oncePath(), 'utf8')) as Record<string, number>
+  } catch {
+    data = {}
+  }
+  if (data[key]) return true
+  data[key] = 1
+  fs.mkdirSync(path.dirname(oncePath()), { recursive: true })
+  fs.writeFileSync(oncePath(), JSON.stringify(data))
+  return false
+}
+
+async function readLocalStats() {
+  const { normalizeStats } = await statsLib()
+  return normalizeStats(loadStats())
+}
+
+async function bumpLocal(field: string, amount = 1, onceKey = '') {
+  const { normalizeStats } = await statsLib()
+  if (onceKey && seenOnce(`${field}:${onceKey}`)) return readLocalStats()
+  const stats = normalizeStats(loadStats()) as Record<string, number>
+  stats[field] = (stats[field] || 0) + amount
   saveStats(stats)
   return stats
 }
@@ -135,11 +160,35 @@ function wishlistApi(): Plugin {
     const { parts, url } = matchApi(req.url)
     try {
       if (req.method === 'GET' && parts[0] === 'api' && parts[1] === 'stats') {
-        send(res, 200, loadStats())
+        send(res, 200, await readLocalStats())
         return true
       }
       if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'stats') {
-        send(res, 200, bumpLocal('visits'))
+        const body = JSON.parse((await readBody(req)) || '{}') as {
+          field?: string
+          event?: string
+          listId?: string
+          ref?: string
+        }
+        const { fieldForEvent } = await statsLib()
+        const { cleanRef } = await import('./netlify/lib/wishlist-access.mjs')
+        const field = fieldForEvent(body.event || body.field)
+        if (!field) {
+          send(res, 400, { error: 'Unknown event' })
+          return true
+        }
+        if (field === 'refSignups') {
+          const ref = cleanRef(body.ref, body.listId)
+          const listId = cleanRef(body.listId)
+          if (!ref || !listId) {
+            send(res, 200, await readLocalStats())
+            return true
+          }
+          send(res, 200, await bumpLocal(field, 1, listId))
+          return true
+        }
+        const once = field === 'created' && body.listId ? cleanRef(body.listId) : ''
+        send(res, 200, await bumpLocal(field, 1, once))
         return true
       }
       if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'preview') {
@@ -201,9 +250,16 @@ function wishlistApi(): Plugin {
           send(res, 200, { list: access.presentList(list, { owner: true }), owner: true })
           return true
         }
-        if (!url.searchParams.has('peek')) bumpLocal('opens')
+        if (!url.searchParams.has('peek')) {
+          access.noteOpen(list)
+          saveDb(db)
+          await bumpLocal('opens')
+        }
         const tokens = access.tokensFromHeader(req.headers['x-claim-tokens'])
-        send(res, 200, { list: access.presentList(list, { tokens }) })
+        const { tagAmazonLinks, amazonAssociateTag } = await import('./netlify/lib/affiliate.mjs')
+        send(res, 200, {
+          list: tagAmazonLinks(access.presentList(list, { tokens }), amazonAssociateTag()),
+        })
         return true
       }
 
@@ -214,21 +270,13 @@ function wishlistApi(): Plugin {
           send(res, 403, { error: 'Wrong edit key' })
           return true
         }
-        if (!existing) bumpLocal('lists')
-        const items = access.mergeItems(
-          existing?.items,
-          Array.isArray(incoming.items) ? incoming.items : [],
-        )
-        const list: List = {
-          id,
-          ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
-          recipient: typeof incoming.recipient === 'string' ? incoming.recipient : existing?.recipient || '',
-          occasion: typeof incoming.occasion === 'string' ? incoming.occasion : existing?.occasion || 'Birthday',
-          message: typeof incoming.message === 'string' ? incoming.message : existing?.message || '',
-          updatedAt: new Date().toISOString(),
-          items,
-          links: Array.isArray(incoming.links) ? incoming.links : existing?.links,
+        const written = access.nextStoredList(existing, incoming, id, ownerKey)
+        const list = written.list as List
+        if (written.created) {
+          await bumpLocal('lists')
+          await bumpLocal('published')
         }
+        if (written.added) await bumpLocal('items', written.added)
         db[id] = list
         saveDb(db)
         const owner = Boolean(ownerKey) && ownerKey === list.ownerKey
@@ -255,6 +303,7 @@ function wishlistApi(): Plugin {
           const claimToken = access.reserve(list, body)
           tokens.add(claimToken)
           saveDb(db)
+          await bumpLocal('claims')
           send(res, 200, {
             list: access.presentList(list, { tokens }),
             claimToken,

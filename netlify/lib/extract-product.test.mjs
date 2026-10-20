@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { extractProduct, isJunkTitle, isUsableProduct } from './extract-product.mjs'
+import { extractProduct, flipkartTitleFromUrl, isJunkTitle, isUsableProduct } from './extract-product.mjs'
 
 test('ignores the Amazon search shortcut and reads the product title and price', () => {
   const html = `<!doctype html><title>Amazon.in</title>
@@ -64,6 +64,16 @@ test('ignores return-policy thresholds that are not the product price', () => {
     'https://www.amazon.in/dp/B0CHX1W1XY',
   )
   assert.equal(priced.price, 76999)
+})
+
+test('builds a Flipkart title from the slug and pid when the shop blocks the page', () => {
+  const title = flipkartTitleFromUrl(
+    'https://www.flipkart.com/boat-airdopes-219-40h-battery-free-music/p/itm9514600334640?pid=ACCHCJW3HZ2GVH29',
+  )
+  assert.match(title, /Boat Airdopes 219 40H Battery/)
+  assert.match(title, /ACCHCJW3HZ2GVH29/)
+  assert.equal(isJunkTitle(title), false)
+  assert.equal(flipkartTitleFromUrl('https://www.flipkart.com/'), '')
 })
 
 test('reads JSON-LD product name, offer price, and image', () => {

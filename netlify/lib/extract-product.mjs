@@ -429,24 +429,41 @@ function productFromSchema(node) {
   }
 }
 
-async function fetchFlipkartApi(url) {
-  const pageUri = `${url.pathname}${url.search}`
-  const res = await fetch('https://1.rome.api.flipkart.com/api/4/page/fetch', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'User-Agent': MOBILE_HEADERS['User-Agent'],
-      'X-User-Agent': `${MOBILE_HEADERS['User-Agent']} FKUA/msite/0.0.3/msite/Mobile`,
-    },
-    body: JSON.stringify({
-      pageUri,
-      pageContext: { fetchSeoData: true },
-    }),
-    signal: AbortSignal.timeout(7000),
-  })
-  if (!res.ok) return null
-  const data = await res.json()
+const FLIPKART_ROME = [
+  'https://2.rome.api.flipkart.com/api/4/page/fetch',
+  'https://1.rome.api.flipkart.com/api/4/page/fetch',
+]
+
+export function flipkartTitleFromUrl(rawUrl) {
+  let url
+  try {
+    url = new URL(String(rawUrl || ''))
+  } catch {
+    return ''
+  }
+  if (!isFlipkartProduct(url)) return ''
+  const slug =
+    decodeURIComponent(url.pathname.split('/p/')[0] || '')
+      .split('/')
+      .filter(Boolean)
+      .pop() || ''
+  const words = slug.split(/[-_]+/).filter((word) => word && !/^itm/i.test(word))
+  const title = words
+    .map((word, index) => {
+      const lower = word.toLowerCase()
+      if (index > 0 && /^(and|or|for|the|a|an|of|to|in|on|with|from)$/.test(lower)) return lower
+      const unit = lower.match(/^(\d+)([a-z]+)$/)
+      if (unit) return `${unit[1]}${unit[2].toUpperCase()}`
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
+    .join(' ')
+  const pid = url.searchParams.get('pid') || url.pathname.match(/\/(itm[a-z0-9]+)/i)?.[1] || ''
+  if (!title && !pid) return ''
+  if (!title) return `Flipkart item ${pid}`
+  return pid ? `${title} (${pid})` : title
+}
+
+function productFromRome(data, pageUrl) {
   const schema = data?.RESPONSE?.pageData?.seoData?.schema
   const nodes = Array.isArray(schema) ? schema : schema ? [schema] : []
   let best = null
@@ -460,7 +477,68 @@ async function fetchFlipkartApi(url) {
     }
   }
   if (!best) return null
-  return { ...best, url: url.href }
+  return { ...best, url: pageUrl }
+}
+
+async function requestRome(endpoint, pageUri, pageUrl) {
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': MOBILE_HEADERS['User-Agent'],
+      'X-User-Agent': `${MOBILE_HEADERS['User-Agent']} FKUA/msite/0.0.3/msite/Mobile`,
+    },
+    body: JSON.stringify({
+      pageUri,
+      pageContext: { fetchSeoData: true },
+    }),
+    signal: AbortSignal.timeout(5000),
+  })
+  if (!res.ok) return null
+  return productFromRome(await res.json(), pageUrl)
+}
+
+function raceUsable(tasks) {
+  return new Promise((resolve) => {
+    let pending = tasks.length
+    let best = null
+    let done = false
+    const finish = (value) => {
+      if (done) return
+      done = true
+      resolve(value)
+    }
+    if (!pending) {
+      finish(null)
+      return
+    }
+    for (const task of tasks) {
+      Promise.resolve(task)
+        .then((value) => {
+          if (done || !isUsableProduct(value)) return
+          best = mergeProduct(best, value)
+          if (best?.price != null && best.image) finish(best)
+        })
+        .catch(() => {})
+        .finally(() => {
+          pending -= 1
+          if (!done && pending === 0) finish(best)
+        })
+    }
+  })
+}
+
+async function fetchFlipkartApi(url) {
+  const pageUri = `${url.pathname}${url.search}`
+  const mobile = new URL(url.href)
+  mobile.hostname = mobile.hostname.replace(/^www\./, '')
+  if (!mobile.hostname.startsWith('m.')) mobile.hostname = `m.${mobile.hostname}`
+  return raceUsable([
+    ...FLIPKART_ROME.map((endpoint) => requestRome(endpoint, pageUri, url.href)),
+    fetchHtml(url.href, MOBILE_HEADERS),
+    fetchHtml(mobile.href, MOBILE_HEADERS),
+  ])
 }
 
 function readerPrice(markdown) {
@@ -535,23 +613,24 @@ export async function fetchProductPreview(rawUrl) {
   if (isStoreHome(url.href)) throw new PreviewError(MANUAL_FILL, 422)
   let data = null
 
-  if (isFlipkartProduct(url)) data = await settle(fetchFlipkartApi(url))
-
-  if (!isUsableProduct(data) || data.price == null || !data.image) {
+  if (isFlipkartProduct(url)) {
+    data = await settle(fetchFlipkartApi(url))
+    if (!isUsableProduct(data)) {
+      const title = flipkartTitleFromUrl(url.href)
+      if (title) data = { title, image: '', price: null, url: url.href }
+    }
+  } else if (!isUsableProduct(data) || data?.price == null || !data?.image) {
     const tasks = []
     if (isAmazonHost(url) && amazonAsin(url.href)) {
       tasks.push(fetchHtml(amazonDesktopUrl(url), DESKTOP_HEADERS))
       const mobile = amazonMobileUrl(url)
       if (mobile) tasks.push(fetchHtml(mobile, MOBILE_HEADERS))
-    } else if (!isFlipkartProduct(url)) {
+    } else {
       tasks.push(fetchHtml(url.href, DESKTOP_HEADERS))
-    } else if (!isUsableProduct(data)) {
-      tasks.push(fetchHtml(url.href, MOBILE_HEADERS))
     }
     if (tasks.length) data = mergeProduct(data, await firstUsable(tasks))
+    if (!isUsableProduct(data)) data = await settle(fetchReader(url))
   }
-
-  if (!isUsableProduct(data)) data = await settle(fetchReader(url))
 
   if (!isUsableProduct(data)) throw new PreviewError(MANUAL_FILL, 422)
 

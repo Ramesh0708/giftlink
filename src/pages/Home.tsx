@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, useAnimation, useReducedMotion } from 'framer-motion'
 import StepPlayer from '../components/StepPlayer'
+import { landings } from '../data/landings.mjs'
 import { storeMeta } from '../data/stores'
 import { useRegion } from '../lib/region-context'
 import { loadAllLists } from '../lib/storage'
@@ -106,6 +107,20 @@ export default function Home() {
               <span className="dot" style={{ background: s.hue }} />
               {s.name}
             </motion.span>
+          ))}
+        </div>
+      </section>
+
+      <section className="section">
+        <h2>Start from an occasion</h2>
+        <p className="lede">Diwali is in early November. The other lists work any time of year.</p>
+        <div className="idea-grid">
+          {landings.map((page) => (
+            <Link className="card idea-card" key={page.path} to={page.path}>
+              {page.badge ? <span className="idea-badge">{page.badge}</span> : null}
+              <strong>{page.nav}</strong>
+              <span className="meta">{page.eyebrow}</span>
+            </Link>
           ))}
         </div>
       </section>

@@ -40,8 +40,50 @@ export function presentList(list, { owner = false, tokens = new Set() } = {}) {
     updatedAt: list.updatedAt,
     items,
   }
-  if (owner) return { ...base, links: Array.isArray(list.links) ? list.links : [] }
+  if (owner) {
+    return {
+      ...base,
+      links: Array.isArray(list.links) ? list.links : [],
+      opens: Number(list.opens) || 0,
+      publishedAt: list.publishedAt || null,
+    }
+  }
   return base
+}
+
+export function cleanRef(value, selfId = '') {
+  const ref = String(value || '').trim()
+  if (!/^[a-z0-9]{6,24}$/i.test(ref) || ref === selfId) return ''
+  return ref
+}
+
+export function nextStoredList(existing, incoming, id, ownerKey) {
+  const items = mergeItems(existing?.items, Array.isArray(incoming?.items) ? incoming.items : [])
+  const now = new Date().toISOString()
+  const list = {
+    ...(existing || {}),
+    id,
+    ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
+    recipient: typeof incoming?.recipient === 'string' ? incoming.recipient : existing?.recipient || '',
+    occasion: typeof incoming?.occasion === 'string' ? incoming.occasion : existing?.occasion || 'Birthday',
+    message: typeof incoming?.message === 'string' ? incoming.message : existing?.message || '',
+    updatedAt: now,
+    publishedAt: existing?.publishedAt || now,
+    opens: Number(existing?.opens) || 0,
+    referredBy: existing?.referredBy || cleanRef(incoming?.referredBy, id),
+    items,
+    links: Array.isArray(incoming?.links) ? incoming.links : existing?.links,
+  }
+  return {
+    list,
+    created: !existing,
+    added: Math.max(0, items.length - (existing?.items?.length || 0)),
+  }
+}
+
+export function noteOpen(list) {
+  list.opens = (Number(list.opens) || 0) + 1
+  return list
 }
 
 export function mergeItems(existingItems = [], incomingItems = []) {

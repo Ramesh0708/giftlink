@@ -11,19 +11,34 @@ export function ownerKeyFromHash(hash: string) {
   return new URLSearchParams(raw).get('k')?.trim() || ''
 }
 
-export function shareCopy(shareUrl: string, recipient = '') {
-  const who = recipient.trim() || 'me'
-  return `🎁 Here’s a GiftLink for ${who} — pick a gift so nobody guesses (or doubles up).\n${shareUrl}`
+export function shareCopy(shareUrl: string, recipient = '', occasion = '') {
+  const who = recipient.trim()
+  const when = occasion.trim()
+  const name = who ? `${who}’s` : 'My'
+  const event = when ? `${when} ` : ''
+  return [
+    `🎁 ${name} ${event}wishlist`,
+    '',
+    'This is what I’d actually love. Open the list, tap “I’ll get this” on one gift, then buy it from the link so two people don’t bring the same thing.',
+    '',
+    shareUrl,
+  ].join('\n')
 }
 
 export function forwardCopy(shareUrl: string, recipient = '', occasion = '') {
-  const who = recipient.trim() || 'this'
-  const when = occasion.trim() ? ` (${occasion.trim()})` : ''
-  return `Looking at ${who}’s GiftLink${when} — claim one so we don’t double-buy.\n${shareUrl}`
+  const who = recipient.trim() || 'someone'
+  const when = occasion.trim() ? ` for ${occasion.trim()}` : ''
+  return [
+    `🎁 Gifts for ${who}${when}`,
+    '',
+    'Claim one gift so the group doesn’t double-buy, then grab it from the link.',
+    '',
+    shareUrl,
+  ].join('\n')
 }
 
-export function whatsappShareUrl(shareUrl: string, recipient = '') {
-  return `https://wa.me/?text=${encodeURIComponent(shareCopy(shareUrl, recipient))}`
+export function whatsappShareUrl(shareUrl: string, recipient = '', occasion = '') {
+  return `https://wa.me/?text=${encodeURIComponent(shareCopy(shareUrl, recipient, occasion))}`
 }
 
 export function whatsappForwardUrl(shareUrl: string, recipient = '', occasion = '') {

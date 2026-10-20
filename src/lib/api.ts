@@ -54,6 +54,8 @@ export async function fetchOwned(id: string, ownerKey: string): Promise<StoredLi
     ...data.list,
     ownerKey,
     published: true,
+    opens: data.list.opens ?? 0,
+    publishedAt: data.list.publishedAt ?? null,
     links: data.list.links,
     items: data.list.items.map((item) => ({ ...item, reservedBy: item.reservedBy ?? null })),
   }
@@ -134,6 +136,13 @@ export type SiteStats = {
   visits: number
   lists: number
   opens: number
+  created?: number
+  items?: number
+  published?: number
+  shares?: number
+  claims?: number
+  buyClicks?: number
+  refSignups?: number
 }
 
 export async function fetchStats(): Promise<SiteStats> {

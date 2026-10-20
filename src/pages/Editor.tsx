@@ -8,7 +8,9 @@ import { fetchOwned, fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
 import { defaultNote, isStockNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
+import { needsShareNudge } from '../../netlify/lib/nudge.mjs'
 import { ownerEditUrl, ownerKeyFromHash, publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
+import { track } from '../lib/track'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -55,6 +57,9 @@ export default function Editor() {
             id,
             ownerKey: key,
             published: true,
+            opens: remote.opens ?? 0,
+            publishedAt: remote.publishedAt || base.publishedAt || null,
+            referredBy: local?.referredBy || base.referredBy,
             links: remote.links?.length ? remote.links : local?.links,
             items: base.items.map((item) => ({ ...item, reservedBy: item.reservedBy ?? null })),
           }
@@ -124,8 +129,13 @@ export default function Editor() {
     }
     setPublishing(true)
     try {
-      await publishList(next)
-      const marked = { ...next, published: true }
+      const remote = await publishList(next)
+      const marked = {
+        ...next,
+        published: true,
+        opens: remote.opens ?? next.opens ?? 0,
+        publishedAt: remote.publishedAt || next.publishedAt || new Date().toISOString(),
+      }
       saveList(marked)
       setList(marked)
       return true
@@ -141,7 +151,8 @@ export default function Editor() {
     if (!list) return
     const popup = window.open('', '_blank')
     const ok = await publish(list)
-    const href = whatsappShareUrl(shareUrl, list.recipient || list.occasion)
+    track('share', { listId: list.id })
+    const href = whatsappShareUrl(shareUrl, list.recipient, list.occasion)
     if (!ok) {
       popup?.close()
       return
@@ -154,7 +165,8 @@ export default function Editor() {
     if (!list) return
     const ok = await publish(list)
     if (!ok) return
-    const text = shareCopy(shareUrl, list.recipient || list.occasion)
+    track('share', { listId: list.id })
+    const text = shareCopy(shareUrl, list.recipient, list.occasion)
     try {
       await navigator.clipboard.writeText(text)
       flash(experience?.copiedFlash ?? 'Message copied.')
@@ -311,6 +323,18 @@ export default function Editor() {
           </div>
         </div>
       </div>
+
+      {needsShareNudge(current) && (
+        <div className="nudge" role="status">
+          <strong>Nobody has opened this list yet.</strong>
+          <p>
+            It’s been live for a day and still has 0 opens. Send the WhatsApp message again so friends actually see it.
+          </p>
+          <button className="btn btn-whatsapp" type="button" onClick={() => void shareWhatsApp()}>
+            Share on WhatsApp
+          </button>
+        </div>
+      )}
 
       <div className="card owner-link">
         <strong>Private edit link</strong>

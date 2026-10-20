@@ -45,6 +45,8 @@ export type Wishlist = {
   message: string
   updatedAt: string
   items: WishItem[]
+  opens?: number
+  publishedAt?: string | null
 }
 
 export type StoreLink = {
@@ -58,4 +60,5 @@ export type StoredList = Wishlist & {
   ownerKey: string
   links?: StoreLink[]
   published?: boolean
+  referredBy?: string
 }
