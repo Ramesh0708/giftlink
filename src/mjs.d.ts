@@ -38,6 +38,7 @@ declare module '*.mjs' {
     pose: { x: number; y: number; r: number; vx: number; vy: number; vr: number }
     settled: boolean
   }
+  export function displayPhoto(url: string, kind: 'thumb' | 'card'): string
   export function needsShareNudge(
     list: { published?: boolean; publishedAt?: string | null; updatedAt?: string; opens?: number },
     now?: number,

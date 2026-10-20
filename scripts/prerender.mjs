@@ -4,7 +4,36 @@ import { landings } from '../src/data/landings.mjs'
 
 const origin = (process.env.URL || 'https://wiishlist.netlify.app').replace(/\/$/, '')
 const dist = path.resolve('dist')
-const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8')
+let template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8')
+
+function inlineCss(html) {
+  const match = html.match(/<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/)
+  if (!match) throw new Error('Built HTML is missing the stylesheet')
+  const css = fs.readFileSync(path.join(dist, match[1].replace(/^\//, '')), 'utf8')
+  return html.replace(match[0], `<style>${css}</style>`)
+}
+
+function chunkMeta(html) {
+  const assets = fs.readdirSync(path.join(dist, 'assets'))
+  const fileFor = (prefix) => {
+    const file = assets.find((name) => name.startsWith(prefix) && name.endsWith('.js'))
+    if (!file) throw new Error(`Built HTML is missing the ${prefix} chunk`)
+    return `/assets/${file}`
+  }
+  const content = [
+    `home=${fileFor('Home-')}`,
+    `view=${fileFor('View-')}`,
+    `howto=${fileFor('HowTo-')}`,
+    `landing=${fileFor('Landing-')}`,
+  ].join(',')
+  const tag = `<meta name="giftlink-chunks" content="${content}" />`
+  if (!html.includes('name="giftlink-chunks"')) {
+    throw new Error('Built HTML is missing the chunk preload tag')
+  }
+  return html.replace(/<meta name="giftlink-chunks" content="[^"]*"\s*\/?>/, tag)
+}
+
+template = chunkMeta(inlineCss(template))
 if (!template.includes('content="R_MrDCaUuDRcZ3Tv2mJDmOh0th9WZMI8sY4bZ2XHJPc"')) {
   throw new Error('Built HTML is missing the Google site verification tag')
 }
