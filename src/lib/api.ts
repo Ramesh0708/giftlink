@@ -30,13 +30,26 @@ function claimHeaders(tokens?: string[]): Record<string, string> {
   return { 'x-claim-tokens': tokens.join(',') }
 }
 
+type PublicPrefetch = { id: string; response: Promise<Response> }
+
+function takePrefetch(id: string, peek?: boolean) {
+  if (peek || typeof window === 'undefined') return null
+  const pending = (window as Window & { __giftlinkPrefetch?: PublicPrefetch }).__giftlinkPrefetch
+  if (!pending || pending.id !== id) return null
+  delete (window as Window & { __giftlinkPrefetch?: PublicPrefetch }).__giftlinkPrefetch
+  return pending.response
+}
+
 export async function fetchPublic(
   id: string,
   opts?: { peek?: boolean; tokens?: string[] },
 ): Promise<Wishlist> {
-  const res = await fetch(`/api/wishlists/${id}${opts?.peek ? '?peek=1' : ''}`, {
-    headers: claimHeaders(opts?.tokens),
-  })
+  const prefetched = takePrefetch(id, opts?.peek)
+  const res = prefetched
+    ? await prefetched
+    : await fetch(`/api/wishlists/${id}${opts?.peek ? '?peek=1' : ''}`, {
+        headers: claimHeaders(opts?.tokens),
+      })
   const data = await parse<{ list: Wishlist }>(res)
   return data.list
 }

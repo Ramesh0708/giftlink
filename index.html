@@ -26,12 +26,59 @@
     <meta name="twitter:image" content="https://wiishlist.netlify.app/og.jpg" />
     <link rel="image_src" href="https://wiishlist.netlify.app/og.jpg" />
     <title>GiftLink — gifts without the guessing</title>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-EP4MKTGEZ4"></script>
+    <meta name="giftlink-chunks" content="" />
+    <link rel="preload" href="/fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin />
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-EP4MKTGEZ4', { send_page_view: false });
+      function loadGiftLinkAnalytics() {
+        if (window.__giftlinkGa) return;
+        window.__giftlinkGa = true;
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-EP4MKTGEZ4';
+        document.head.appendChild(script);
+      }
+      function armAnalytics() {
+        addEventListener('pointerdown', loadGiftLinkAnalytics, { once: true, passive: true });
+        addEventListener('keydown', loadGiftLinkAnalytics, { once: true });
+        setTimeout(loadGiftLinkAnalytics, 8000);
+      }
+      if (document.readyState === 'complete') armAnalytics();
+      else addEventListener('load', armAnalytics, { once: true });
+
+      var chunkMeta = document.querySelector('meta[name="giftlink-chunks"]');
+      var chunks = chunkMeta ? chunkMeta.getAttribute('content') || '' : '';
+      function preloadChunk(name) {
+        var match = chunks.match(new RegExp('(?:^|,)' + name + '=([^,]+)'));
+        if (!match) return;
+        var link = document.createElement('link');
+        link.rel = 'modulepreload';
+        link.href = match[1];
+        link.crossOrigin = 'anonymous';
+        document.head.appendChild(link);
+      }
+      var path = location.pathname.replace(/\/+$/, '') || '/';
+      var listMatch = path.match(/^\/w\/([^/]+)$/);
+      if (listMatch) {
+        preloadChunk('view');
+        var tokens = '';
+        try {
+          var saved = JSON.parse(localStorage.getItem('giftlink:claims:' + listMatch[1]) || '{}');
+          tokens = Object.keys(saved).map(function (key) { return saved[key]; }).filter(Boolean).join(',');
+        } catch (e) {}
+        var headers = tokens ? { 'x-claim-tokens': tokens } : {};
+        window.__giftlinkPrefetch = {
+          id: listMatch[1],
+          response: fetch('/api/wishlists/' + encodeURIComponent(listMatch[1]), { headers: headers })
+        };
+      } else if (path === '/') {
+        preloadChunk('home');
+      } else if (path === '/how-to') {
+        preloadChunk('howto');
+      }
     </script>
   </head>
   <body>

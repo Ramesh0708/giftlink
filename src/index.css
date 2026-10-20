@@ -236,6 +236,20 @@ h3 { font-size: 1.15rem; }
   padding: 10px;
   rotate: 2deg;
 }
+@media (prefers-reduced-motion: no-preference) {
+  .hero-card { animation: hero-float 5.5s ease-in-out infinite; }
+  .hero-item { animation: hero-in 0.35s ease-out both; }
+  .hero-item:nth-child(2) { animation-delay: 0.1s; }
+  .hero-item:nth-child(3) { animation-delay: 0.2s; }
+}
+@keyframes hero-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+@keyframes hero-in {
+  from { opacity: 0; translate: 10px 0; }
+  to { opacity: 1; translate: 0; }
+}
 .hero-item {
   display: grid;
   grid-template-columns: 84px 1fr auto;
@@ -1045,9 +1059,10 @@ body:has(.desk) {
   .washi { transform: translateX(-50%); }
   .giftbox-lid,
   .envelope-flap,
+  .hero-card,
+  .hero-item,
   .desk.is-opening .desk-sheet { animation: none; transition: none; }
 }
-
 .tidy-row { display: flex; justify-content: flex-end; margin-top: 8px; }
 .polaroid.is-dragging { z-index: 3; transition: none; cursor: grabbing; }
 .polaroid.is-tidy { transition: transform 0.45s ease; }

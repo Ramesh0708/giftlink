@@ -8,6 +8,7 @@ import { claimTokenFor, claimTokens, forgetClaim, rememberClaim } from '../lib/c
 import { envelopeKey, shouldSealEnvelope, themeForOccasion } from '../lib/delight.mjs'
 import { money } from '../lib/format'
 import { displayNote } from '../lib/note'
+import { displayPhoto } from '../lib/photos.mjs'
 import { useRegion } from '../lib/region-context'
 import { forwardCopy, publicShareUrl, whatsappForwardUrl } from '../lib/share'
 import { gaEvent, track } from '../lib/track'
@@ -299,10 +300,11 @@ export default function View() {
           </div>
         )}
         <div className="desk-grid" ref={gridRef}>
-          {list.items.map((item) => {
+          {list.items.map((item, index) => {
             const store = storeMeta(item.store)
             const claimed = Boolean(item.claimed || item.reservedBy)
             const mine = Boolean(item.mine)
+            const eager = index === 0
             return (
               <article
                 className="polaroid"
@@ -315,8 +317,13 @@ export default function View() {
                   {item.image ? (
                     <img
                       className="polaroid-photo"
-                      src={item.image}
+                      src={displayPhoto(item.image, 'card')}
                       alt=""
+                      width={800}
+                      height={800}
+                      loading={eager ? 'eager' : 'lazy'}
+                      fetchPriority={eager ? 'high' : 'low'}
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
                         e.currentTarget.style.visibility = 'hidden'
