@@ -28,3 +28,11 @@ After deploy:
 4. Tap **Share on WhatsApp**. Friends open `/s/...`.
 
 Save the private edit link shown in the editor. It opens the list on any device. Don’t send that link to friends.
+
+Occasion pages (`/diwali-gift-list` and the other lists linked from the home page) are prerendered so the HTML is not an empty shell. Diwali is called out because the festival is in early November.
+
+## Amazon Associates
+
+Amazon.in buy links that friends see include an Associates `tag`. The default tag is `giftlink0e-21`, so this works with no Netlify setting. Set `AMAZON_ASSOCIATE_TAG` to use a different tag. A blank or invalid value falls back to `giftlink0e-21`. Other shops are left alone. The tag is added when a list is read, and it is not written into the saved wishlist.
+
+In a function this is read with `Netlify.env.get("AMAZON_ASSOCIATE_TAG")`. Shared lists and the site footer include: “As an Amazon Associate, GiftLink earns from qualifying purchases.”

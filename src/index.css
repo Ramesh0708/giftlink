@@ -677,6 +677,67 @@ footer.credits {
   .step-fill { transform: none; }
 }
 
+.idea-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+.idea-card {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 120px;
+}
+.idea-card strong {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.35rem;
+}
+.idea-badge {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #f3d9a4;
+  color: #6a4b16;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+.cta-band {
+  margin: 28px 0;
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--wine);
+  color: #fff8ee;
+}
+.cta-band h2 { margin: 0 0 8px; }
+.cta-band p { margin: 0 0 14px; }
+.cta-band .btn {
+  background: #fff;
+  color: var(--wine-deep);
+}
+.nudge {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff7e6;
+  border: 1px solid #efd7a2;
+}
+.nudge p { margin: 6px 0 12px; }
+.landing-points {
+  display: grid;
+  gap: 14px;
+  margin: 28px 0;
+}
+.landing-points h2 { font-size: 1.45rem; margin-bottom: 6px; }
+.associate {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 @media (max-width: 840px) {
   .hero, .grid-3, .row-2, .row-3, .link-grid, .region-grid { grid-template-columns: 1fr; }
   .hero-card { rotate: 0; }

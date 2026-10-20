@@ -17,6 +17,76 @@
   status = 200
 
 [[redirects]]
+  from = "/diwali-gift-list"
+  to = "/diwali-gift-list/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/diwali-gift-list/"
+  to = "/diwali-gift-list/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/wedding-registry-india"
+  to = "/wedding-registry-india/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/wedding-registry-india/"
+  to = "/wedding-registry-india/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/birthday-wishlist"
+  to = "/birthday-wishlist/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/birthday-wishlist/"
+  to = "/birthday-wishlist/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/baby-shower-registry"
+  to = "/baby-shower-registry/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/baby-shower-registry/"
+  to = "/baby-shower-registry/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/housewarming-gift-list"
+  to = "/housewarming-gift-list/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/housewarming-gift-list/"
+  to = "/housewarming-gift-list/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/secret-santa-india"
+  to = "/secret-santa-india/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/secret-santa-india/"
+  to = "/secret-santa-india/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/share-amazon-wishlist"
+  to = "/share-amazon-wishlist/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/share-amazon-wishlist/"
+  to = "/share-amazon-wishlist/index.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

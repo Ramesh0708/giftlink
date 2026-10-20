@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://wiishlist.netlify.app/</loc>
-  </url>
-  <url>
-    <loc>https://wiishlist.netlify.app/how-to</loc>
-  </url>
+  <url><loc>https://wiishlist.netlify.app/</loc></url>
+  <url><loc>https://wiishlist.netlify.app/how-to</loc></url>
+  <url><loc>https://wiishlist.netlify.app/diwali-gift-list</loc></url>
+  <url><loc>https://wiishlist.netlify.app/wedding-registry-india</loc></url>
+  <url><loc>https://wiishlist.netlify.app/birthday-wishlist</loc></url>
+  <url><loc>https://wiishlist.netlify.app/baby-shower-registry</loc></url>
+  <url><loc>https://wiishlist.netlify.app/housewarming-gift-list</loc></url>
+  <url><loc>https://wiishlist.netlify.app/secret-santa-india</loc></url>
+  <url><loc>https://wiishlist.netlify.app/share-amazon-wishlist</loc></url>
 </urlset>

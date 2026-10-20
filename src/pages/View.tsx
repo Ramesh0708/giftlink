@@ -7,6 +7,7 @@ import { money } from '../lib/format'
 import { displayNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
 import { forwardCopy, publicShareUrl, whatsappForwardUrl } from '../lib/share'
+import { track } from '../lib/track'
 import type { Wishlist } from '../types'
 
 const NAME_KEY = 'giftlink:gifterName'
@@ -95,6 +96,7 @@ export default function View() {
 
   const openCount = list.items.filter((i) => !i.claimed && !i.reservedBy).length
   const who = list.recipient.trim()
+  const claimedOne = list.items.some((item) => item.mine)
   const shareText = forwardCopy(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)
 
   async function copyForward() {
@@ -124,10 +126,18 @@ export default function View() {
             href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
             target="_blank"
             rel="noreferrer"
+            onClick={() => track('share', { listId: id })}
           >
             Share on WhatsApp
           </a>
-          <button type="button" className="btn btn-ghost" onClick={() => void copyForward()}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              track('share', { listId: id })
+              void copyForward()
+            }}
+          >
             {copied ? 'Copied' : 'Copy link'}
           </button>
         </div>
@@ -148,6 +158,8 @@ export default function View() {
         </label>
         {error && <p className="meta">{error}</p>}
       </div>
+
+      <OwnListCta id={id} afterClaim={false} />
 
       {list.items.length === 0 ? (
         <div className="card empty">
@@ -188,7 +200,13 @@ export default function View() {
                   )}
                   <div className="item-actions">
                     {item.url && (
-                      <a className="btn btn-primary btn-sm" href={item.url} target="_blank" rel="noreferrer">
+                      <a
+                        className="btn btn-primary btn-sm"
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => track('buy', { listId: id })}
+                      >
                         Buy on {store.name}
                       </a>
                     )}
@@ -217,6 +235,26 @@ export default function View() {
           })}
         </div>
       )}
+
+      {claimedOne && <OwnListCta id={id} afterClaim />}
+      <p className="associate">As an Amazon Associate, GiftLink earns from qualifying purchases.</p>
     </section>
+  )
+}
+
+function OwnListCta({ id, afterClaim }: { id: string; afterClaim: boolean }) {
+  return (
+    <aside className="cta-band">
+      <p className="eyebrow">{afterClaim ? 'You claimed a gift' : 'Like this list?'}</p>
+      <h2>Make your own GiftLink</h2>
+      <p>
+        {afterClaim
+          ? 'Now share what you want. Add a product link, and send one WhatsApp message of your own.'
+          : 'Build a list of gifts you actually want. It goes live when you add the first one.'}
+      </p>
+      <Link className="btn" to={`/new?ref=${encodeURIComponent(id)}`}>
+        Make your own GiftLink
+      </Link>
+    </aside>
   )
 }

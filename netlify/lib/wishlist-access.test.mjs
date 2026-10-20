@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mergeItems, presentList, reserve, unreserve } from './wishlist-access.mjs'
+import { mergeItems, nextStoredList, noteOpen, presentList, reserve, unreserve } from './wishlist-access.mjs'
 
 function sample() {
   return {
@@ -70,6 +70,44 @@ test('owner saves do not clear an existing claim', () => {
   assert.equal(merged[0].title, 'Mug renamed')
   assert.equal(merged[0].reservedBy, 'Arjun')
   assert.equal(merged[0].claimToken, 'token-claim-1')
+})
+
+test('a republish keeps claims, the first publish time, and referral', () => {
+  const existing = sample()
+  existing.publishedAt = '2026-01-01T00:00:00.000Z'
+  existing.opens = 2
+  const first = nextStoredList(null, { items: [{ id: 'a', title: 'Mug' }], referredBy: 'friendlist1' }, 'newlist1', 'key')
+  assert.equal(first.created, true)
+  assert.equal(first.added, 1)
+  assert.equal(first.list.referredBy, 'friendlist1')
+  assert.ok(first.list.publishedAt)
+  const again = nextStoredList(
+    existing,
+    {
+      items: [
+        { id: 'a', title: 'Mug renamed' },
+        { id: 'b', title: 'Book' },
+        { id: 'c', title: 'Lamp' },
+      ],
+      referredBy: 'otherlist1',
+    },
+    'list1',
+    'owner-secret',
+  )
+  assert.equal(again.created, false)
+  assert.equal(again.added, 1)
+  assert.equal(again.list.publishedAt, '2026-01-01T00:00:00.000Z')
+  assert.equal(again.list.opens, 2)
+  assert.equal(again.list.referredBy, 'otherlist1')
+  existing.referredBy = 'friendlist1'
+  const kept = nextStoredList(existing, { referredBy: 'otherlist1', items: existing.items }, 'list1', 'owner-secret')
+  assert.equal(kept.list.referredBy, 'friendlist1')
+  assert.equal(again.list.items[0].reservedBy, 'Arjun')
+  noteOpen(again.list)
+  assert.equal(again.list.opens, 3)
+  const owner = presentList(again.list, { owner: true })
+  assert.equal(owner.opens, 3)
+  assert.equal(presentList(again.list).opens, undefined)
 })
 
 test('owner view includes store links and still hides names', () => {

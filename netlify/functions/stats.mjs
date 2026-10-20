@@ -1,4 +1,5 @@
-import { bumpStat, readStats } from '../lib/stats-store.mjs'
+import { bumpStat, fieldForEvent, readStats } from '../lib/stats-store.mjs'
+import { cleanRef } from '../lib/wishlist-access.mjs'
 
 export default async (req) => {
   try {
@@ -7,10 +8,16 @@ export default async (req) => {
     }
     if (req.method === 'POST') {
       const body = await req.json().catch(() => ({}))
-      if (body.field !== 'visits') {
-        return Response.json({ error: 'Unknown field' }, { status: 400 })
+      const field = fieldForEvent(body.event || body.field)
+      if (!field) return Response.json({ error: 'Unknown event' }, { status: 400 })
+      if (field === 'refSignups') {
+        const listId = cleanRef(body.listId)
+        const ref = cleanRef(body.ref, listId)
+        if (!listId || !ref) return Response.json(await readStats())
+        return Response.json(await bumpStat(field, 1, listId))
       }
-      return Response.json(await bumpStat('visits'))
+      const once = field === 'created' ? cleanRef(body.listId) : ''
+      return Response.json(await bumpStat(field, 1, once))
     }
     return Response.json({ error: 'Method not allowed' }, { status: 405 })
   } catch (err) {
