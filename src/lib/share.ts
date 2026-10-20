@@ -2,6 +2,15 @@ export function publicShareUrl(origin: string, id: string) {
   return `${origin}/s/${id}`
 }
 
+export function ownerEditUrl(origin: string, id: string, ownerKey: string) {
+  return `${origin}/me/${id}#k=${encodeURIComponent(ownerKey)}`
+}
+
+export function ownerKeyFromHash(hash: string) {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash
+  return new URLSearchParams(raw).get('k')?.trim() || ''
+}
+
 export function shareCopy(shareUrl: string, recipient = '') {
   const who = recipient.trim() || 'me'
   return `🎁 Here’s a GiftLink for ${who} — pick a gift so nobody guesses (or doubles up).\n${shareUrl}`

@@ -4,6 +4,7 @@ import { STORES, storeFromUrl } from '../data/stores'
 import { previewUrl } from '../lib/api'
 import { CURRENCIES, currencyFromUrl } from '../lib/format'
 import { uid } from '../lib/ids'
+import { MANUAL_FILL, isJunkProductTitle } from '../lib/product'
 import { useRegion } from '../lib/region-context'
 
 const empty = (): WishItem => ({
@@ -38,6 +39,18 @@ export default function ItemModal({
   const [error, setError] = useState('')
   const previewReq = useRef(0)
 
+  const set = <K extends keyof WishItem>(key: K, value: WishItem[K]) => {
+    const next = { ...itemRef.current, [key]: value }
+    itemRef.current = next
+    setItem(next)
+  }
+
+  function remember(next: WishItem) {
+    itemRef.current = next
+    setItem(next)
+    return next
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -45,6 +58,15 @@ export default function ItemModal({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  function withLink(current: WishItem, url: string): WishItem {
+    return {
+      ...current,
+      url: current.url || url,
+      currency: currencyFromUrl(url, experience?.currency ?? current.currency),
+      store: storeFromUrl(url),
+    }
+  }
 
   async function fetchPreview(url = itemRef.current.url) {
     if (!url) return itemRef.current
@@ -54,31 +76,26 @@ export default function ItemModal({
     try {
       const data = await previewUrl(url)
       if (req !== previewReq.current) return itemRef.current
+      const current = withLink(itemRef.current, url)
+      if (!data.title || isJunkProductTitle(data.title)) {
+        setError(MANUAL_FILL)
+        return remember(current)
+      }
+      const keepTitle = current.title.trim() && !isJunkProductTitle(current.title)
       const next = {
-        ...itemRef.current,
-        title: itemRef.current.title || data.title,
-        image: data.image || itemRef.current.image,
-        price: itemRef.current.price ?? data.price,
-        currency: currencyFromUrl(url, experience?.currency ?? itemRef.current.currency),
-        store: storeFromUrl(url),
+        ...current,
+        title: keepTitle ? current.title : data.title,
+        image: current.image || data.image || '',
+        price: current.price ?? data.price,
       }
-      setItem(next)
-      itemRef.current = next
-      if (!data.image) {
-        setError('Got the name, but the store hid the photo. You can paste an image URL below.')
+      if (!data.image && !next.image) {
+        setError('Got the name, but the store hid the photo. Paste an image URL below, or add the price yourself.')
       }
-      return next
+      return remember(next)
     } catch {
       if (req !== previewReq.current) return itemRef.current
-      const next = {
-        ...itemRef.current,
-        currency: currencyFromUrl(url, experience?.currency ?? itemRef.current.currency),
-        store: storeFromUrl(url),
-      }
-      setItem(next)
-      itemRef.current = next
-      setError('Could not auto-fill that page. Add the name, photo, and price yourself.')
-      return next
+      setError(MANUAL_FILL)
+      return remember(withLink(itemRef.current, url))
     } finally {
       if (req === previewReq.current) setBusy(false)
     }
@@ -87,11 +104,14 @@ export default function ItemModal({
   async function submit(e: FormEvent) {
     e.preventDefault()
     let next = itemRef.current
-    if (next.url && (!next.image || !next.title)) {
+    if (next.url && !next.title.trim()) {
       next = await fetchPreview(next.url)
+    } else {
+      previewReq.current += 1
+      setBusy(false)
     }
-    if (!next.title.trim()) {
-      setError('Give the gift a name.')
+    if (!next.title.trim() || isJunkProductTitle(next.title)) {
+      setError(next.url ? MANUAL_FILL : 'Give the gift a name.')
       return
     }
     onSave({
@@ -100,9 +120,6 @@ export default function ItemModal({
       reservedBy: initial?.reservedBy ?? null,
     })
   }
-
-  const set = <K extends keyof WishItem>(key: K, value: WishItem[K]) =>
-    setItem((cur) => ({ ...cur, [key]: value }))
 
   return (
     <div className="modal-back" onClick={onClose}>
@@ -236,9 +253,17 @@ export default function ItemModal({
               placeholder="Size M, black if possible…"
             />
           </label>
-          {error && <p className="meta">{error}</p>}
-          <button className="btn btn-primary btn-wide" type="submit" disabled={busy}>
-            {busy ? 'Reading link…' : 'Save gift'}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button
+            className="btn btn-primary btn-wide"
+            type="submit"
+            disabled={busy && !item.title.trim()}
+          >
+            {busy && !item.title.trim() ? 'Reading link…' : 'Save gift'}
           </button>
         </form>
       </div>

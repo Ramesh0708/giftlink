@@ -4,11 +4,11 @@ import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
 import { isDefaultOccasion } from '../data/regions'
 import { storeMeta } from '../data/stores'
-import { fetchPublic, publishList } from '../lib/api'
+import { fetchOwned, fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
 import { defaultNote, isStockNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
-import { publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
+import { ownerEditUrl, ownerKeyFromHash, publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -21,7 +21,7 @@ export default function Editor() {
   const [connect, setConnect] = useState<'amazon' | 'flipkart' | null>(null)
   const [toast, setToast] = useState('')
   const [publishing, setPublishing] = useState(false)
-  const [shareReady, setShareReady] = useState(() => Boolean(loadList(id)?.published))
+  const [blocked, setBlocked] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const syncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const shareUrl = useMemo(
@@ -39,21 +39,47 @@ export default function Editor() {
     if (sessionStorage.getItem('giftlink:creating') === id) {
       sessionStorage.removeItem('giftlink:creating')
     }
-    const loaded = loadList(id)
-    setList(loaded)
-    setShareReady(Boolean(loaded?.published))
-    if (!loaded || loaded.published) return
-    void fetchPublic(id, { peek: true })
-      .then(() => {
-        const latest = loadList(id)
-        if (!latest) return
-        const marked = { ...latest, published: true }
-        saveList(marked)
-        setList(marked)
-        setShareReady(true)
-      })
-      .catch(() => {})
+    let live = true
+    const local = loadList(id)
+    setList(local)
+    setBlocked('')
+    const fromHash = ownerKeyFromHash(window.location.hash)
+    const key = fromHash || local?.ownerKey || ''
+    if (key) {
+      void fetchOwned(id, key)
+        .then((remote) => {
+          if (!live) return
+          const base = !local || (remote.updatedAt || '') >= (local.updatedAt || '') ? remote : local
+          const next: StoredList = {
+            ...base,
+            id,
+            ownerKey: key,
+            published: true,
+            links: remote.links?.length ? remote.links : local?.links,
+            items: base.items.map((item) => ({ ...item, reservedBy: item.reservedBy ?? null })),
+          }
+          saveList(next)
+          setList(next)
+          if (fromHash) window.history.replaceState(null, '', `/me/${id}`)
+        })
+        .catch(() => {
+          if (!live || local) return
+          setBlocked('This private edit link doesn’t match a saved list.')
+        })
+    } else if (local && !local.published) {
+      void fetchPublic(id, { peek: true })
+        .then(() => {
+          if (!live) return
+          const latest = loadList(id)
+          if (!latest) return
+          const marked = { ...latest, published: true }
+          saveList(marked)
+          setList(marked)
+        })
+        .catch(() => {})
+    }
     return () => {
+      live = false
       window.clearTimeout(toastTimer.current)
       window.clearTimeout(syncTimer.current)
     }
@@ -92,8 +118,8 @@ export default function Editor() {
     opts: { quiet?: boolean } = {},
   ): Promise<boolean> {
     if (!next) return false
-    if (!next.recipient.trim()) {
-      flash('Add your name first. Friends will see “Gifts for your name”.')
+    if (!next.items.length) {
+      if (!opts.quiet) flash('Add a gift first. The list goes live as soon as you save one.')
       return false
     }
     setPublishing(true)
@@ -102,8 +128,6 @@ export default function Editor() {
       const marked = { ...next, published: true }
       saveList(marked)
       setList(marked)
-      setShareReady(true)
-      if (!opts.quiet) flash(experience?.publishFlash ?? 'Published.')
       return true
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Could not publish yet.')
@@ -140,12 +164,15 @@ export default function Editor() {
   }
 
   if (!list) {
+    if (ownerKeyFromHash(window.location.hash) && !blocked) {
+      return <p className="meta">Opening your list…</p>
+    }
     return (
       <section className="section">
         <h1>List not on this device</h1>
         <p className="lede">
-          Wishlists are edited from the browser that created them. Open your
-          share link to view it, or start a new list.
+          {blocked ||
+            'Open the private edit link you saved when you made this list. The public WhatsApp link is only for friends.'}
         </p>
         <Link className="btn btn-primary" to="/new">
           Create wishlist
@@ -191,8 +218,17 @@ export default function Editor() {
 
   const amazonLink = (list.links || []).find((l) => l.store === 'amazon')
   const flipkartLink = (list.links || []).find((l) => l.store === 'flipkart')
-  const preferWhatsApp = experience?.preferWhatsApp ?? false
   const showFlipkart = (experience?.showFlipkart ?? false) || Boolean(flipkartLink)
+  const ownerUrl = ownerEditUrl(window.location.origin, list.id, list.ownerKey)
+
+  async function copyOwnerLink() {
+    try {
+      await navigator.clipboard.writeText(ownerUrl)
+      flash('Private edit link copied. Keep it somewhere only you can open.')
+    } catch {
+      flash(ownerUrl)
+    }
+  }
 
   return (
     <section>
@@ -206,25 +242,12 @@ export default function Editor() {
           </p>
         </div>
         <div className="nav-actions">
-          {preferWhatsApp ? (
-            <>
-              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                WhatsApp
-              </button>
-              <button className="btn btn-ghost" onClick={() => void copyLink()}>
-                Copy share text
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="btn btn-primary" onClick={() => void copyLink()}>
-                Copy message
-              </button>
-              <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                WhatsApp
-              </button>
-            </>
-          )}
+          <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
+            Share on WhatsApp
+          </button>
+          <button className="btn btn-ghost" onClick={() => void copyLink()}>
+            Copy link
+          </button>
           <button className="btn btn-primary" onClick={() => setModal('new')}>
             Add gift
           </button>
@@ -272,39 +295,33 @@ export default function Editor() {
             onChange={(e) => persist({ ...list, message: e.target.value }, 'debounced')}
           />
         </label>
-        <button
-          className="btn btn-sage"
-          disabled={publishing}
-          onClick={() => void publish()}
-        >
-          {publishing ? 'Publishing…' : 'Publish so friends can see it'}
-        </button>
-        {shareReady && (
-          <div className="share-bar">
-            <p className="meta">{experience?.liveHint}</p>
-            <div className="nav-actions">
-              {preferWhatsApp ? (
-                <>
-                  <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                    Send on WhatsApp
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => void copyLink()}>
-                    Copy message
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="btn btn-primary" onClick={() => void copyLink()}>
-                    Copy message
-                  </button>
-                  <button className="btn btn-whatsapp" onClick={() => void shareWhatsApp()}>
-                    WhatsApp
-                  </button>
-                </>
-              )}
-            </div>
+        <div className="share-bar">
+          <p className="meta">
+            {list.items.length
+              ? experience?.liveHint
+              : 'Add a gift and this list goes live on its own. Then share it on WhatsApp.'}
+          </p>
+          <div className="nav-actions">
+            <button className="btn btn-whatsapp" disabled={publishing} onClick={() => void shareWhatsApp()}>
+              Share on WhatsApp
+            </button>
+            <button className="btn btn-ghost" disabled={publishing} onClick={() => void copyLink()}>
+              Copy link
+            </button>
           </div>
-        )}
+        </div>
+      </div>
+
+      <div className="card owner-link">
+        <strong>Private edit link</strong>
+        <p className="meta">
+          Save this. After a gift is saved, it opens the editor on any phone or computer.
+          Don’t send it to friends — they get the WhatsApp link.
+        </p>
+        <p className="owner-url">{ownerUrl}</p>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => void copyOwnerLink()}>
+          Copy private link
+        </button>
       </div>
 
       <div className="card note" style={{ marginBottom: 22 }}>

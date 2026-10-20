@@ -8,17 +8,18 @@ export default async (req) => {
   try {
     const store = getStore('wishlists')
     const list = id ? await store.get(id, { type: 'json' }) : null
-    const html = shareCardHtml({ origin, id, list })
-    return new Response(html, {
+    const card = shareCardHtml({ origin, id, list })
+    return new Response(card.html, {
+      status: card.status,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
+        'Cache-Control': card.status === 200 ? 'public, max-age=300' : 'no-store',
       },
     })
   } catch {
-    const html = shareCardHtml({ origin, id, list: null })
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    return new Response('Wishlist preview is temporarily unavailable', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     })
   }
 }

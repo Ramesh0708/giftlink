@@ -7,7 +7,8 @@ export default function AnimatedCounter({ value }: Props) {
   const chars = formatted.split('')
 
   return (
-    <span className="counter" aria-label={formatted}>
+    <span className="counter">
+      <span className="sr-only">{formatted}</span>
       {chars.map((char, index) => {
         if (!/\d/.test(char)) {
           return (

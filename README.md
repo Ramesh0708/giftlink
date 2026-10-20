@@ -2,7 +2,7 @@
 
 A shareable gift wishlist. Add products from Amazon, Flipkart, Myntra, and anywhere else, then send one link so friends can buy what you actually want — and claim a gift so nobody doubles up.
 
-Amazon and Flipkart do **not** allow apps to sign in with your shopping password. GiftLink never asks for those. Instead, connect a **shared wishlist link** (Amazon: Wish List → Share → Anyone with the link) or paste product URLs, pick items, and publish.
+Amazon and Flipkart do **not** allow apps to sign in with your shopping password. GiftLink never asks for those. Instead, connect a **shared wishlist link** (Amazon: Wish List → Share → Anyone with the link) or paste product URLs. The list goes live when you add a gift.
 
 ## Run locally
 
@@ -24,7 +24,7 @@ After deploy:
 
 1. Open your Netlify URL
 2. Open **How to use** if you need the walkthrough
-3. Create a wishlist, add gifts, click **Publish** or **Copy share link**
-4. Send `/w/...` to friends
+3. Create a wishlist and add a gift. It goes live on its own.
+4. Tap **Share on WhatsApp**. Friends open `/s/...`.
 
-Edit your list from the same browser at `/me/...` (saved on that device).
+Save the private edit link shown in the editor. It opens the list on any device. Don’t send that link to friends.

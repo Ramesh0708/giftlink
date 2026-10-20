@@ -1,10 +1,13 @@
 import { getStore } from '@netlify/blobs'
 import { bumpStat } from '../lib/stats-store.mjs'
-
-function publicList(list) {
-  const { ownerKey, links, ...rest } = list
-  return rest
-}
+import {
+  HttpError,
+  mergeItems,
+  presentList,
+  reserve,
+  tokensFromHeader,
+  unreserve,
+} from '../lib/wishlist-access.mjs'
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {
@@ -18,6 +21,14 @@ function parsePath(url) {
   return pathname.replace(/\/+$/, '').split('/').filter(Boolean)
 }
 
+function claimTokens(req, body) {
+  const tokens = tokensFromHeader(req.headers.get('x-claim-tokens'))
+  if (Array.isArray(body?.tokens)) {
+    for (const token of tokensFromHeader(body.tokens.join(','))) tokens.add(token)
+  }
+  return tokens
+}
+
 export default async (req) => {
   const parts = parsePath(req.url)
   const id = parts[2]
@@ -28,9 +39,14 @@ export default async (req) => {
     if (req.method === 'GET' && id) {
       const list = await store.get(id, { type: 'json' })
       if (!list) return json(404, { error: 'Wishlist not found' })
+      const ownerKey = req.headers.get('x-owner-key') || ''
+      if (ownerKey) {
+        if (ownerKey !== list.ownerKey) return json(403, { error: 'Wrong edit key' })
+        return json(200, { list: presentList(list, { owner: true }), owner: true })
+      }
       const peek = new URL(req.url).searchParams.has('peek')
       if (!peek) void bumpStat('opens')
-      return json(200, { list: publicList(list) })
+      return json(200, { list: presentList(list, { tokens: claimTokens(req) }) })
     }
 
     if (req.method === 'PUT' && id) {
@@ -41,11 +57,7 @@ export default async (req) => {
         return json(403, { error: 'Wrong edit key' })
       }
       if (!existing) void bumpStat('lists')
-      const incomingItems = Array.isArray(incoming.items) ? incoming.items : []
-      const items = incomingItems.map((item) => {
-        const prev = existing?.items?.find((i) => i.id === item.id)
-        return { ...item, reservedBy: prev?.reservedBy ?? item.reservedBy ?? null }
-      })
+      const items = mergeItems(existing?.items, Array.isArray(incoming.items) ? incoming.items : [])
       const list = {
         id,
         ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
@@ -57,34 +69,34 @@ export default async (req) => {
         links: Array.isArray(incoming.links) ? incoming.links : existing?.links,
       }
       await store.setJSON(id, list)
-      return json(200, { list: publicList(list) })
+      const owner = Boolean(ownerKey) && ownerKey === list.ownerKey
+      return json(200, { list: presentList(list, { owner }), owner })
     }
 
     if (req.method === 'POST' && id && (action === 'reserve' || action === 'unreserve')) {
       const list = await store.get(id, { type: 'json' })
       if (!list) return json(404, { error: 'Wishlist not found' })
       const body = await req.json()
-      const item = list.items.find((i) => i.id === body.itemId)
-      if (!item) return json(404, { error: 'Item not found' })
-      const name = String(body.name || '').trim()
+      const tokens = claimTokens(req, body)
       if (action === 'reserve') {
-        if (item.reservedBy) return json(409, { error: 'Already reserved' })
-        if (!name) return json(400, { error: 'Name required' })
-        item.reservedBy = name
-      } else {
-        if (item.reservedBy && item.reservedBy !== name) {
-          return json(403, { error: 'Only the person who reserved it can undo' })
-        }
-        item.reservedBy = null
+        const claimToken = reserve(list, body)
+        tokens.add(claimToken)
+        await store.setJSON(id, list)
+        return json(200, {
+          list: presentList(list, { tokens }),
+          claimToken,
+          itemId: body.itemId,
+        })
       }
-      list.updatedAt = new Date().toISOString()
+      unreserve(list, body)
       await store.setJSON(id, list)
-      return json(200, { list: publicList(list) })
+      return json(200, { list: presentList(list, { tokens }) })
     }
 
     return json(404, { error: 'Not found' })
   } catch (err) {
-    return json(500, { error: err instanceof Error ? err.message : 'Server error' })
+    const status = err instanceof HttpError ? err.status : 500
+    return json(status, { error: err instanceof Error ? err.message : 'Server error' })
   }
 }
 

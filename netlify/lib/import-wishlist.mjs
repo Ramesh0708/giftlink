@@ -3,6 +3,7 @@ import {
   amazonImageFallback,
   extractProduct,
   fetchProductPreview,
+  isUsableProduct,
 } from './extract-product.mjs'
 
 const FETCH_HEADERS = {
@@ -227,11 +228,12 @@ async function fetchPage(url) {
 
 function itemFromHtml(html, pageUrl) {
   const data = extractProduct(html, pageUrl)
+  if (!isUsableProduct(data)) return null
   const store = detectStore(pageUrl)
   const asin = amazonAsin(pageUrl)
   return {
     key: asin || pageUrl,
-    title: (data.title || pageUrl).slice(0, 160),
+    title: data.title.slice(0, 160),
     url: pageUrl,
     image: data.image || amazonImageFallback(pageUrl),
     price: data.price,
@@ -266,7 +268,8 @@ async function itemFromProductPage(url) {
 
 export function itemsFromPage(html, pageUrl) {
   if (isProductUrl(pageUrl) || (looksLikeProductPage(html) && !isListUrl(pageUrl))) {
-    return [itemFromHtml(html, pageUrl)]
+    const item = itemFromHtml(html, pageUrl)
+    return item ? [item] : []
   }
   return parsePage(html, pageUrl).items
 }
@@ -340,19 +343,26 @@ export async function importRemoteWishlist({ url, text }) {
   let listName = ''
   let sourceUrl = all[0]
   let store = detectStore(all[0])
+  const failures = []
 
   for (const link of all.slice(0, 25)) {
-    const loaded = await loadLink(link)
-    if (!listName) listName = loaded.listName
-    if (loaded.sourceUrl) sourceUrl = loaded.sourceUrl
-    if (loaded.store) store = loaded.store
-    for (const item of loaded.items) {
-      if (items.some((existing) => existing.key === item.key || existing.url === item.url)) continue
-      items.push(item)
+    try {
+      const loaded = await loadLink(link)
+      if (!listName) listName = loaded.listName
+      if (loaded.sourceUrl) sourceUrl = loaded.sourceUrl
+      if (loaded.store) store = loaded.store
+      for (const item of loaded.items) {
+        if (items.some((existing) => existing.key === item.key || existing.url === item.url)) continue
+        items.push(item)
+      }
+    } catch (err) {
+      failures.push(err)
     }
   }
 
-  if (items.length === 0) throw new Error(emptyListError(store))
+  if (items.length === 0) {
+    throw failures[0] instanceof Error ? failures[0] : new Error(emptyListError(store))
+  }
 
   return {
     store,

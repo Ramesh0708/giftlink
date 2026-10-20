@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node scripts/prerender.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^11.0.3",
+    "@resvg/resvg-js": "^2.6.2",
     "framer-motion": "^14.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

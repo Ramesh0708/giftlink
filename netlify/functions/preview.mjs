@@ -1,4 +1,4 @@
-import { fetchProductPreview } from '../lib/extract-product.mjs'
+import { fetchProductPreview, PreviewError } from '../lib/extract-product.mjs'
 
 export default async (req) => {
   if (req.method !== 'POST') {
@@ -7,14 +7,13 @@ export default async (req) => {
 
   try {
     const { url } = await req.json()
-    if (!url) {
-      return Response.json({ error: 'Missing url' }, { status: 400 })
-    }
+    if (!url) return Response.json({ error: 'Missing url' }, { status: 400 })
     return Response.json(await fetchProductPreview(url))
   } catch (err) {
+    const status = err instanceof PreviewError ? err.status : 500
     return Response.json(
       { error: err instanceof Error ? err.message : 'Could not read that link' },
-      { status: 500 },
+      { status },
     )
   }
 }
