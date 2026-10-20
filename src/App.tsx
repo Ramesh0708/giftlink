@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { fetchStats, hitSite } from './lib/api'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
 import { useRegion } from './lib/region-context'
@@ -8,11 +8,12 @@ import { loadList, saveList } from './lib/storage'
 import AnimatedCounter from './components/AnimatedCounter'
 import RegionGate from './components/RegionGate'
 import ScrollProgress from './components/ScrollProgress'
-import Home from './pages/Home'
-import Editor from './pages/Editor'
-import View from './pages/View'
-import HowTo from './pages/HowTo'
 import type { StoredList } from './types'
+
+const Home = lazy(() => import('./pages/Home'))
+const Editor = lazy(() => import('./pages/Editor'))
+const View = lazy(() => import('./pages/View'))
+const HowTo = lazy(() => import('./pages/HowTo'))
 
 function Logo() {
   return (
@@ -61,20 +62,30 @@ function NewList() {
 
 export default function App() {
   const [visits, setVisits] = useState<number | null>(null)
-  const location = useLocation()
   const { experience, openPicker } = useRegion()
-  const shared = location.pathname.startsWith('/w/') || location.pathname.startsWith('/s/')
-  const ready = Boolean(experience) || shared
 
   useEffect(() => {
-    const key = 'giftlink:hit'
-    const run = sessionStorage.getItem(key)
-      ? fetchStats()
-      : hitSite().then((data) => {
-          sessionStorage.setItem(key, '1')
-          return data
+    try {
+      const cached = sessionStorage.getItem('giftlink:stats')
+      if (cached) setVisits(JSON.parse(cached).visits as number)
+    } catch {
+      /* ignore a bad cache */
+    }
+    if (sessionStorage.getItem('giftlink:hit')) return
+    const path = window.location.pathname
+    if (path.startsWith('/w/') || path.startsWith('/s/')) return
+    const kick = () => {
+      if (sessionStorage.getItem('giftlink:hit')) return
+      void hitSite()
+        .then((data) => {
+          sessionStorage.setItem('giftlink:hit', '1')
+          sessionStorage.setItem('giftlink:stats', JSON.stringify(data))
+          setVisits(data.visits)
         })
-    void run.then((data) => setVisits(data.visits)).catch(() => setVisits(null))
+        .catch(() => setVisits(null))
+    }
+    const timer = window.setTimeout(kick, 1500)
+    return () => window.clearTimeout(timer)
   }, [])
 
   return (
@@ -100,7 +111,7 @@ export default function App() {
           </Link>
         </div>
       </nav>
-      {ready && (
+      <Suspense fallback={<p className="meta">Loading…</p>}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/how-to" element={<HowTo />} />
@@ -110,8 +121,8 @@ export default function App() {
           <Route path="/s/:id" element={<ShareToView />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      )}
-      <RegionGate shared={shared} />
+      </Suspense>
+      <RegionGate />
       <footer className="site credits">
         {visits != null && (
           <>

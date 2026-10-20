@@ -83,18 +83,18 @@ export const REGIONS: Experience[] = [
     preferWhatsApp: true,
     showFlipkart: true,
     amazonListPlaceholder: 'https://www.amazon.in/hz/wishlist/ls/…',
-    publishFlash: 'Published — send the WhatsApp message next.',
+    publishFlash: 'Your list is live. Share it on WhatsApp.',
     copiedFlash: 'WhatsApp-ready message copied.',
-    liveHint: 'List is live. Send this — it already includes your note and the /w/ link.',
+    liveHint: 'Adding a gift publishes the list. Share on WhatsApp — friends open that link, not this editor.',
     editorAdd: 'Tap Add gift and paste a product link from Amazon or Flipkart — or connect a whole shared wishlist below.',
-    editorShare: 'Tap Publish, then WhatsApp — send the ready message. Friends must open the /w/… link, not this editor page.',
+    editorShare: 'Tap Share on WhatsApp. The list is already live. Friends must open the link in the message, not this editor page.',
     emptyBody: 'Connect Amazon or Flipkart, or add a gift by name.',
     howtoLede:
       'You make a list of gifts you want. Friends open one link, pick something, and buy it on Amazon or Flipkart. Nobody has to guess — and two people won’t buy the same thing.',
     howtoOccasion: 'birthday, Diwali, housewarming',
     howtoShops: 'Amazon, Flipkart, or any shop',
     howtoSend:
-      'Tap Publish so friends can see it, then WhatsApp. The chat gets a picture card plus a short message. Don’t send the /me/ editor link — that’s only for you.',
+      'Tap Share on WhatsApp. The list goes live when you add a gift — there is no separate publish step. The chat gets a picture card. Save your private edit link, and don’t send that one.',
     howtoBuy: 'Buy on Amazon / Flipkart',
   },
   {
@@ -140,18 +140,18 @@ export const REGIONS: Experience[] = [
     preferWhatsApp: false,
     showFlipkart: false,
     amazonListPlaceholder: 'https://www.amazon.com/hz/wishlist/ls/…',
-    publishFlash: 'Published — copy the message into your office chat.',
+    publishFlash: 'Your list is live. Share it on WhatsApp.',
     copiedFlash: 'Message copied. Paste it into Teams, Slack, or email.',
-    liveHint: 'List is live. Copy the message into your office chat. Friends open the /w/ link.',
+    liveHint: 'Adding a gift publishes the list. Share on WhatsApp, or copy the message. Friends open that link, not this editor.',
     editorAdd: 'Tap Add gift and paste a product link from Amazon, Target, Walmart, or any shop.',
-    editorShare: 'Tap Publish, then copy the message into Teams, Slack, or email. Friends must open the /w/… link, not this editor page.',
+    editorShare: 'Tap Share on WhatsApp (or copy the message). The list is already live. Friends must open that link, not this editor page.',
     emptyBody: 'Connect Amazon, or add a gift from any shop.',
     howtoLede:
       'You make a list of gifts you want. Colleagues open one link, pick something, and buy it from the store on that gift. Nobody has to guess — and two people won’t buy the same thing.',
     howtoOccasion: 'a birthday, Secret Santa, or the holidays',
     howtoShops: 'Amazon, Target, Walmart, or any shop',
     howtoSend:
-      'Tap Publish so friends can see it, then copy the message into Teams, Slack, or email. Don’t send the /me/ editor link — that’s only for you.',
+      'Tap Share on WhatsApp, or copy the message into Teams, Slack, or email. The list goes live when you add a gift. Save your private edit link, and don’t send that one.',
     howtoBuy: 'Buy on the store named on the gift',
   },
   {
@@ -197,18 +197,18 @@ export const REGIONS: Experience[] = [
     preferWhatsApp: false,
     showFlipkart: false,
     amazonListPlaceholder: 'https://www.amazon.co.uk/hz/wishlist/ls/…',
-    publishFlash: 'Published — copy the message into your office chat.',
+    publishFlash: 'Your list is live. Share it on WhatsApp.',
     copiedFlash: 'Message copied. Paste it into Teams, Slack, or email.',
-    liveHint: 'List is live. Copy the message into your office chat. Friends open the /w/ link.',
+    liveHint: 'Adding a gift publishes the list. Share on WhatsApp, or copy the message. Friends open that link, not this editor.',
     editorAdd: 'Tap Add gift and paste a product link from Amazon, John Lewis, Zalando, or any shop.',
-    editorShare: 'Tap Publish, then copy the message into Teams, Slack, or email. Friends must open the /w/… link, not this editor page.',
+    editorShare: 'Tap Share on WhatsApp (or copy the message). The list is already live. Friends must open that link, not this editor page.',
     emptyBody: 'Connect Amazon, or add a gift from any shop.',
     howtoLede:
       'You make a list of gifts you want. Colleagues open one link, pick something, and buy it from the store on that gift. Nobody has to guess — and two people won’t buy the same thing.',
     howtoOccasion: 'Christmas, Secret Santa, or a birthday',
     howtoShops: 'Amazon, John Lewis, Zalando, or any shop',
     howtoSend:
-      'Tap Publish so friends can see it, then copy the message into Teams, Slack, or email. Don’t send the /me/ editor link — that’s only for you.',
+      'Tap Share on WhatsApp, or copy the message into Teams, Slack, or email. The list goes live when you add a gift. Save your private edit link, and don’t send that one.',
     howtoBuy: 'Buy on the store named on the gift',
   },
   {
@@ -254,18 +254,18 @@ export const REGIONS: Experience[] = [
     preferWhatsApp: false,
     showFlipkart: false,
     amazonListPlaceholder: 'https://www.amazon.sg/hz/wishlist/ls/…',
-    publishFlash: 'Published — copy the message into your office chat.',
+    publishFlash: 'Your list is live. Share it on WhatsApp.',
     copiedFlash: 'Message copied. Paste it into Teams, Slack, or email.',
-    liveHint: 'List is live. Copy the message into your office chat. Friends open the /w/ link.',
+    liveHint: 'Adding a gift publishes the list. Share on WhatsApp, or copy the message. Friends open that link, not this editor.',
     editorAdd: 'Tap Add gift and paste a product link from Shopee, Lazada, Amazon, or any shop.',
-    editorShare: 'Tap Publish, then copy the message into Teams, Slack, or email. Friends must open the /w/… link, not this editor page.',
+    editorShare: 'Tap Share on WhatsApp (or copy the message). The list is already live. Friends must open that link, not this editor page.',
     emptyBody: 'Connect Amazon, or add a gift from any shop.',
     howtoLede:
       'You make a list of gifts you want. Colleagues open one link, pick something, and buy it from the store on that gift. Nobody has to guess — and two people won’t buy the same thing.',
     howtoOccasion: 'year-end, 11.11, or a birthday',
     howtoShops: 'Shopee, Lazada, Amazon, or any shop',
     howtoSend:
-      'Tap Publish so friends can see it, then copy the message into Teams, Slack, or email. Don’t send the /me/ editor link — that’s only for you.',
+      'Tap Share on WhatsApp, or copy the message into Teams, Slack, or email. The list goes live when you add a gift. Save your private edit link, and don’t send that one.',
     howtoBuy: 'Buy on the store named on the gift',
   },
 ]
@@ -290,6 +290,24 @@ export function loadRegion(): RegionId | null {
     return null
   }
   return null
+}
+
+export function inferRegion(): RegionId {
+  const saved = loadRegion()
+  if (saved) return saved
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''
+    const lang = (navigator.language || '').toLowerCase()
+    if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta' || lang.endsWith('-in')) return 'india'
+    if (/^(America|US|Canada|Brazil)\//.test(tz) || lang.endsWith('-us') || lang.endsWith('-ca') || lang.endsWith('-br')) {
+      return 'americas'
+    }
+    if (/^(Europe|Africa|Atlantic)\//.test(tz)) return 'emea'
+    if (/^(Australia|Pacific)\//.test(tz) || tz.startsWith('Asia/')) return 'apac'
+  } catch {
+    /* fall through to the default */
+  }
+  return 'india'
 }
 
 export function saveRegion(id: RegionId) {

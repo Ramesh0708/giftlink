@@ -34,6 +34,8 @@ export type WishItem = {
   notes: string
   priority: Priority
   reservedBy: string | null
+  claimed?: boolean
+  mine?: boolean
 }
 
 export type Wishlist = {

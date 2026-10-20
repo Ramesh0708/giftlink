@@ -73,11 +73,6 @@ function saveDb(db: Record<string, List>) {
   fs.writeFileSync(dbPath(), JSON.stringify(db, null, 2))
 }
 
-function publicList(list: List) {
-  const { ownerKey: _ownerKey, links: _links, ...rest } = list
-  return rest
-}
-
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
@@ -106,16 +101,34 @@ async function preview(url: string) {
 
 function wishlistApi(): Plugin {
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.url?.startsWith('/api/og/')) {
+      const { parts } = matchApi(req.url)
+      const id = decodeURIComponent(parts[2] || '')
+      const list = id ? loadDb()[id] : null
+      if (!list) {
+        res.statusCode = 404
+        res.end('Not found')
+        return true
+      }
+      const { renderShareImage } = await import('./netlify/lib/og-card.mjs')
+      const png = await renderShareImage(list)
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'image/png')
+      res.setHeader('Cache-Control', 'public, max-age=300')
+      res.end(png)
+      return true
+    }
     if (req.url?.startsWith('/s/')) {
       const { parts } = matchApi(req.url)
       const id = parts[1] || ''
       const origin = `http://${req.headers.host || 'localhost:5173'}`
       const list = id ? loadDb()[id] : null
       const { shareCardHtml } = await import('./netlify/lib/share-card.mjs')
-      const html = shareCardHtml({ origin, id, list })
-      res.statusCode = 200
+      const card = shareCardHtml({ origin, id, list })
+      res.statusCode = card.status
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
-      res.end(html)
+      res.setHeader('Cache-Control', card.status === 200 ? 'public, max-age=300' : 'no-store')
+      res.end(card.html)
       return true
     }
     if (!req.url?.startsWith('/api/')) return false
@@ -135,7 +148,15 @@ function wishlistApi(): Plugin {
           send(res, 400, { error: 'Missing url' })
           return true
         }
-        send(res, 200, await preview(body.url))
+        try {
+          send(res, 200, await preview(body.url))
+        } catch (err) {
+          const status =
+            err && typeof err === 'object' && 'status' in err ? Number(err.status) || 500 : 500
+          send(res, status, {
+            error: err instanceof Error ? err.message : 'Could not read that link',
+          })
+        }
         return true
       }
 
@@ -164,6 +185,7 @@ function wishlistApi(): Plugin {
       const id = parts[2]
       const action = parts[3]
       const ownerKey = String(req.headers['x-owner-key'] || '')
+      const access = await import('./netlify/lib/wishlist-access.mjs')
 
       if (req.method === 'GET' && id) {
         const list = db[id]
@@ -171,8 +193,17 @@ function wishlistApi(): Plugin {
           send(res, 404, { error: 'Wishlist not found' })
           return true
         }
+        if (ownerKey) {
+          if (ownerKey !== list.ownerKey) {
+            send(res, 403, { error: 'Wrong edit key' })
+            return true
+          }
+          send(res, 200, { list: access.presentList(list, { owner: true }), owner: true })
+          return true
+        }
         if (!url.searchParams.has('peek')) bumpLocal('opens')
-        send(res, 200, { list: publicList(list) })
+        const tokens = access.tokensFromHeader(req.headers['x-claim-tokens'])
+        send(res, 200, { list: access.presentList(list, { tokens }) })
         return true
       }
 
@@ -184,11 +215,10 @@ function wishlistApi(): Plugin {
           return true
         }
         if (!existing) bumpLocal('lists')
-        const incomingItems = Array.isArray(incoming.items) ? incoming.items : []
-        const items = incomingItems.map((item) => {
-          const prev = existing?.items.find((i) => i.id === item.id)
-          return { ...item, reservedBy: prev?.reservedBy ?? item.reservedBy ?? null }
-        })
+        const items = access.mergeItems(
+          existing?.items,
+          Array.isArray(incoming.items) ? incoming.items : [],
+        )
         const list: List = {
           id,
           ownerKey: existing?.ownerKey || ownerKey || crypto.randomUUID(),
@@ -201,7 +231,8 @@ function wishlistApi(): Plugin {
         }
         db[id] = list
         saveDb(db)
-        send(res, 200, { list: publicList(list) })
+        const owner = Boolean(ownerKey) && ownerKey === list.ownerKey
+        send(res, 200, { list: access.presentList(list, { owner }), owner })
         return true
       }
 
@@ -214,39 +245,33 @@ function wishlistApi(): Plugin {
         const body = JSON.parse((await readBody(req)) || '{}') as {
           itemId?: string
           name?: string
+          token?: string
+          tokens?: string[]
         }
-        const item = list.items.find((i) => i.id === body.itemId)
-        if (!item) {
-          send(res, 404, { error: 'Item not found' })
+        const tokens = access.tokensFromHeader(
+          [req.headers['x-claim-tokens'], ...(body.tokens || [])].filter(Boolean).join(','),
+        )
+        if (action === 'reserve') {
+          const claimToken = access.reserve(list, body)
+          tokens.add(claimToken)
+          saveDb(db)
+          send(res, 200, {
+            list: access.presentList(list, { tokens }),
+            claimToken,
+            itemId: body.itemId,
+          })
           return true
         }
-        const name = (body.name || '').trim()
-        if (action === 'reserve') {
-          if (item.reservedBy) {
-            send(res, 409, { error: 'Already reserved' })
-            return true
-          }
-          if (!name) {
-            send(res, 400, { error: 'Name required' })
-            return true
-          }
-          item.reservedBy = name
-        } else {
-          if (item.reservedBy && item.reservedBy !== name) {
-            send(res, 403, { error: 'Only the person who reserved it can undo' })
-            return true
-          }
-          item.reservedBy = null
-        }
-        list.updatedAt = new Date().toISOString()
+        access.unreserve(list, body)
         saveDb(db)
-        send(res, 200, { list: publicList(list) })
+        send(res, 200, { list: access.presentList(list, { tokens }) })
         return true
       }
 
       send(res, 404, { error: 'Not found' })
     } catch (err) {
-      send(res, 500, { error: err instanceof Error ? err.message : 'Server error' })
+      const status = err && typeof err === 'object' && 'status' in err ? Number(err.status) || 500 : 500
+      send(res, status, { error: err instanceof Error ? err.message : 'Server error' })
     }
     return true
   }

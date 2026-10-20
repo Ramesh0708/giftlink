@@ -1,9 +1,9 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { loadRegion, regionById, saveRegion, type Experience, type RegionId } from '../data/regions'
+import { inferRegion, loadRegion, regionById, saveRegion, type Experience, type RegionId } from '../data/regions'
 
 type RegionContextValue = {
-  region: RegionId | null
-  experience: Experience | null
+  region: RegionId
+  experience: Experience
   picking: boolean
   choose: (id: RegionId) => void
   openPicker: () => void
@@ -13,9 +13,17 @@ type RegionContextValue = {
 const RegionContext = createContext<RegionContextValue | null>(null)
 
 export function RegionProvider({ children }: { children: ReactNode }) {
-  const [region, setRegion] = useState<RegionId | null>(() => loadRegion())
+  const [region, setRegion] = useState<RegionId>(() => {
+    const id = inferRegion()
+    try {
+      if (!loadRegion()) saveRegion(id)
+    } catch {
+      /* keep the inferred region if storage is blocked */
+    }
+    return id
+  })
   const [picking, setPicking] = useState(false)
-  const experience = useMemo(() => (region ? regionById(region) : null), [region])
+  const experience = useMemo(() => regionById(region), [region])
 
   const value = useMemo<RegionContextValue>(
     () => ({

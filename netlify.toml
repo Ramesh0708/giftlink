@@ -2,6 +2,20 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  external_node_modules = ["@resvg/resvg-js"]
+  included_files = ["netlify/fonts/**"]
+
+[[redirects]]
+  from = "/how-to"
+  to = "/how-to/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/how-to/"
+  to = "/how-to/index.html"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

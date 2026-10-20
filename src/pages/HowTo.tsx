@@ -70,7 +70,7 @@ export default function HowTo() {
 
         <article className="card">
           <div className="step-num">4</div>
-          <h3>Publish and send the share link</h3>
+          <h3>Share on WhatsApp</h3>
           <p className="meta">{experience.howtoSend}</p>
         </article>
 

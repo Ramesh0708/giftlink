@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
+import { claimTokenFor, claimTokens, forgetClaim, rememberClaim } from '../lib/claims'
 import { money } from '../lib/format'
 import { displayNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
@@ -21,7 +22,7 @@ export default function View() {
 
   useEffect(() => {
     let live = true
-    fetchPublic(id)
+    fetchPublic(id, { tokens: claimTokens(id) })
       .then((data) => {
         if (live) setList(data)
       })
@@ -46,7 +47,9 @@ export default function View() {
     setBusy(itemId)
     setError('')
     try {
-      setList(await reserveItem(id, itemId, name.trim()))
+      const result = await reserveItem(id, itemId, name.trim(), claimTokens(id))
+      rememberClaim(id, itemId, result.claimToken)
+      setList(result.list)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not reserve')
     } finally {
@@ -55,10 +58,17 @@ export default function View() {
   }
 
   async function undo(itemId: string) {
+    const token = claimTokenFor(id, itemId)
+    if (!token) {
+      setError('This claim can only be undone from the browser that made it.')
+      return
+    }
     setBusy(itemId)
     setError('')
     try {
-      setList(await unreserveItem(id, itemId, name.trim()))
+      const result = await unreserveItem(id, itemId, token, claimTokens(id))
+      forgetClaim(id, itemId)
+      setList(result.list)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not undo')
     } finally {
@@ -69,10 +79,10 @@ export default function View() {
   if (error && !list) {
     return (
       <section className="section">
-        <h1>This list isn’t published yet</h1>
+        <h1>This list isn’t available</h1>
         <p className="lede">
-          {error}. Ask them to tap “Publish” in GiftLink, then try this link
-          again.
+          {error}. If it’s new, the owner needs to add a gift — it goes live
+          automatically — then send the link again.
         </p>
         <Link className="btn btn-primary" to="/">
           Back home
@@ -83,9 +93,8 @@ export default function View() {
 
   if (!list) return <p className="meta">Loading wishlist…</p>
 
-  const openCount = list.items.filter((i) => !i.reservedBy).length
+  const openCount = list.items.filter((i) => !i.claimed && !i.reservedBy).length
   const who = list.recipient.trim()
-  const preferWhatsApp = experience?.preferWhatsApp ?? false
   const shareText = forwardCopy(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)
 
   async function copyForward() {
@@ -110,35 +119,17 @@ export default function View() {
           </p>
         </div>
         <div className="nav-actions">
-          {preferWhatsApp ? (
-            <>
-              <a
-                className="btn btn-whatsapp"
-                href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Forward on WhatsApp
-              </a>
-              <button type="button" className="btn btn-ghost" onClick={() => void copyForward()}>
-                {copied ? 'Copied' : 'Copy message'}
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn btn-primary" onClick={() => void copyForward()}>
-                {copied ? 'Copied' : 'Copy message'}
-              </button>
-              <a
-                className="btn btn-whatsapp"
-                href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                WhatsApp
-              </a>
-            </>
-          )}
+          <a
+            className="btn btn-whatsapp"
+            href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Share on WhatsApp
+          </a>
+          <button type="button" className="btn btn-ghost" onClick={() => void copyForward()}>
+            {copied ? 'Copied' : 'Copy link'}
+          </button>
         </div>
       </div>
 
@@ -166,7 +157,8 @@ export default function View() {
         <div className="items">
           {list.items.map((item) => {
             const store = storeMeta(item.store)
-            const mine = item.reservedBy && item.reservedBy === name.trim()
+            const claimed = Boolean(item.claimed || item.reservedBy)
+            const mine = Boolean(item.mine)
             return (
               <article className="item-card" key={item.id}>
                 {item.image ? (
@@ -191,10 +183,8 @@ export default function View() {
                     <div className="price">{money(item.price, item.currency)}</div>
                   )}
                   {item.notes && <p className="meta">{item.notes}</p>}
-                  {item.reservedBy && (
-                    <span className="pill taken">
-                      {mine ? 'You’re getting this' : `${item.reservedBy} is getting this`}
-                    </span>
+                  {claimed && (
+                    <span className="pill taken">{mine ? 'You’re getting this' : 'Claimed'}</span>
                   )}
                   <div className="item-actions">
                     {item.url && (
@@ -202,7 +192,7 @@ export default function View() {
                         Buy on {store.name}
                       </a>
                     )}
-                    {!item.reservedBy && (
+                    {!claimed && (
                       <button
                         className="btn btn-ghost btn-sm"
                         disabled={busy === item.id}

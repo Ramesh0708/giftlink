@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import { REGIONS } from '../data/regions'
 import { useRegion } from '../lib/region-context'
 
-export default function RegionGate({ shared }: { shared: boolean }) {
+export default function RegionGate() {
   const { region, picking, choose, closePicker } = useRegion()
-  const open = (!region && !shared) || picking
+  const open = picking
 
   useEffect(() => {
     if (!open) return
@@ -18,7 +18,7 @@ export default function RegionGate({ shared }: { shared: boolean }) {
   if (!open) return null
 
   return (
-    <div className="modal-back region-back" role="presentation">
+    <div className="modal-back region-back">
       <div
         className="modal region-sheet"
         role="dialog"

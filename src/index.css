@@ -1,3 +1,18 @@
+@font-face {
+  font-family: Nunito;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/nunito-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: Fraunces;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/fraunces-latin-700.woff2") format("woff2");
+}
+
 :root {
   --bg: #f3eadc;
   --bg-2: #fff8ee;
@@ -77,6 +92,35 @@ img { max-width: 100%; display: block; }
   background: #eaf6f0;
   border: 1px solid #c5e0d2;
 }
+.form-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fde8ea;
+  color: #8b2942;
+  font-weight: 800;
+}
+.owner-link { margin-bottom: 22px; display: grid; gap: 8px; }
+.owner-url {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff8ee;
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 .nav {
   display: flex;
@@ -135,7 +179,7 @@ img { max-width: 100%; display: block; }
 .btn-ghost:hover { background: #fff8ee; border-color: #e0c9b0; }
 .btn-sage { background: var(--sage); color: #f6fff9; }
 .btn-sage:hover { background: #275a49; }
-.btn-whatsapp { background: #128c7e; color: #f4fffb; }
+.btn-whatsapp { background: #128c7e; color: #f4fffb; box-shadow: 0 8px 18px rgba(18, 140, 126, 0.28); }
 .btn-whatsapp:hover { background: #0e7468; }
 .btn-wide { width: 100%; }
 .btn-sm { min-height: 36px; padding: 6px 12px; font-size: 0.88rem; }

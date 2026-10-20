@@ -25,35 +25,66 @@ export async function publishList(list: StoredList): Promise<Wishlist> {
   return data.list
 }
 
+function claimHeaders(tokens?: string[]): Record<string, string> {
+  if (!tokens?.length) return {}
+  return { 'x-claim-tokens': tokens.join(',') }
+}
+
 export async function fetchPublic(
   id: string,
-  opts?: { peek?: boolean },
+  opts?: { peek?: boolean; tokens?: string[] },
 ): Promise<Wishlist> {
-  const res = await fetch(
-    `/api/wishlists/${id}${opts?.peek ? '?peek=1' : ''}`,
-  )
+  const res = await fetch(`/api/wishlists/${id}${opts?.peek ? '?peek=1' : ''}`, {
+    headers: claimHeaders(opts?.tokens),
+  })
   const data = await parse<{ list: Wishlist }>(res)
   return data.list
 }
 
-export async function reserveItem(id: string, itemId: string, name: string) {
+export async function fetchOwned(id: string, ownerKey: string): Promise<StoredList> {
+  const res = await fetch(`/api/wishlists/${id}`, {
+    headers: { 'x-owner-key': ownerKey },
+  })
+  const data = await parse<{
+    list: Wishlist & { links?: StoredList['links'] }
+    owner?: boolean
+  }>(res)
+  if (!data.owner) throw new Error('Wrong edit key')
+  return {
+    ...data.list,
+    ownerKey,
+    published: true,
+    links: data.list.links,
+    items: data.list.items.map((item) => ({ ...item, reservedBy: item.reservedBy ?? null })),
+  }
+}
+
+export async function reserveItem(
+  id: string,
+  itemId: string,
+  name: string,
+  tokens: string[] = [],
+) {
   const res = await fetch(`/api/wishlists/${id}/reserve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ itemId, name }),
+    headers: { 'Content-Type': 'application/json', ...claimHeaders(tokens) },
+    body: JSON.stringify({ itemId, name, tokens }),
   })
-  const data = await parse<{ list: Wishlist }>(res)
-  return data.list
+  return parse<{ list: Wishlist; claimToken: string; itemId: string }>(res)
 }
 
-export async function unreserveItem(id: string, itemId: string, name: string) {
+export async function unreserveItem(
+  id: string,
+  itemId: string,
+  token: string,
+  tokens: string[] = [],
+) {
   const res = await fetch(`/api/wishlists/${id}/unreserve`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ itemId, name }),
+    headers: { 'Content-Type': 'application/json', ...claimHeaders(tokens) },
+    body: JSON.stringify({ itemId, token, tokens }),
   })
-  const data = await parse<{ list: Wishlist }>(res)
-  return data.list
+  return parse<{ list: Wishlist }>(res)
 }
 
 export type PreviewResult = {
