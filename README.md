@@ -29,7 +29,7 @@ After deploy:
 
 Save the private edit link shown in the editor. It opens the list on any device. Don’t send that link to friends.
 
-Occasion pages (`/diwali-gift-list` and the other lists linked from the home page) are prerendered so the HTML is not an empty shell. Diwali is called out because the festival is in early November.
+Occasion pages (`/diwali-gift-list` and the other lists linked from the home page) are prerendered so the HTML is not an empty shell. Diwali 2026 is 8 November.
 
 ## Amazon Associates
 

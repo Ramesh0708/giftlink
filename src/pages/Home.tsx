@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion, useAnimation, useReducedMotion } from 'framer-motion'
 import StepPlayer from '../components/StepPlayer'
 import { landings } from '../data/landings.mjs'
+import { occasionBanner } from '../lib/occasions.mjs'
 import { storeMeta } from '../data/stores'
 import { useRegion } from '../lib/region-context'
 import { loadAllLists } from '../lib/storage'
@@ -34,13 +35,16 @@ export default function Home() {
   if (!experience) return null
 
   const featured = experience.storeIds.map((id) => storeMeta(id))
+  const banner = occasionBanner(experience.id)
 
   return (
     <>
-      <aside className="sale-banner">
-        <strong>{experience.bannerLead}</strong> {experience.bannerBody}{' '}
-        <Link to="/new">{experience.bannerCta}</Link>
-      </aside>
+      {banner ? (
+        <aside className="sale-banner">
+          <strong>{banner.lead}</strong> {banner.body}{' '}
+          <Link to="/new">{banner.cta}</Link>
+        </aside>
+      ) : null}
       <section className="hero">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: 14 }}
@@ -113,7 +117,11 @@ export default function Home() {
 
       <section className="section">
         <h2>Start from an occasion</h2>
-        <p className="lede">Diwali is in early November. The other lists work any time of year.</p>
+        <p className="lede">
+          {experience.id === 'india' && banner
+            ? 'Diwali is 8 Nov. The other lists work any time of year.'
+            : 'These lists work any time of year.'}
+        </p>
         <div className="idea-grid">
           {landings.map((page) => (
             <Link className="card idea-card" key={page.path} to={page.path}>

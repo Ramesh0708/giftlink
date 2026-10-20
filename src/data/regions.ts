@@ -10,9 +10,6 @@ export type Experience = {
   currency: Currency
   occasion: string
   occasionHint: string
-  bannerLead: string
-  bannerBody: string
-  bannerCta: string
   lede: string
   steps: { title: string; body: string }[]
   heroGifts: { title: string; store: string; photo: string; pill: string; taken?: boolean }[]
@@ -48,10 +45,6 @@ export const REGIONS: Experience[] = [
     currency: 'INR',
     occasion: 'Diwali 2026',
     occasionHint: 'Diwali 2026, birthday…',
-    bannerLead: 'Sale week is here.',
-    bannerBody:
-      'Amazon Great Indian Festival opens 8 Oct (Prime 7 Oct). Flipkart Big Billion Days opens 9 Oct (Plus 8 Oct). Add gifts now so people can buy at sale price — not guess on Diwali (8 Nov).',
-    bannerCta: 'Make a Diwali list',
     lede: 'Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop. Connect a shared store list, send one WhatsApp link, and friends can reserve a gift so nobody doubles up.',
     steps: [
       {
@@ -105,10 +98,6 @@ export const REGIONS: Experience[] = [
     currency: 'USD',
     occasion: 'Holiday 2026',
     occasionHint: 'Holiday 2026, Secret Santa, birthday…',
-    bannerLead: 'Holiday lists, before the rush.',
-    bannerBody:
-      'Black Friday is 27 Nov. Add the gifts you actually want so colleagues buy those — on Amazon, Target, Walmart, or any shop that ships to them — instead of guessing.',
-    bannerCta: 'Start a holiday list',
     lede: 'Build a wishlist from Amazon, Target, Walmart, and anywhere you shop. Send one link in Teams, Slack, or email, and colleagues can reserve a gift so nobody doubles up.',
     steps: [
       {
@@ -162,10 +151,6 @@ export const REGIONS: Experience[] = [
     currency: 'EUR',
     occasion: 'Christmas 2026',
     occasionHint: 'Christmas 2026, Secret Santa, birthday…',
-    bannerLead: 'Christmas lists, before Black Friday.',
-    bannerBody:
-      'Black Friday is 27 Nov. Add gifts from Amazon, John Lewis, Zalando, or any shop that delivers to the buyer. Switch a price to pounds, dirhams, or euros on the gift.',
-    bannerCta: 'Start a Christmas list',
     lede: 'Build a wishlist from Amazon, John Lewis, Zalando, and anywhere you shop. Send one link in Teams, Slack, or email, and colleagues can reserve a gift so nobody doubles up.',
     steps: [
       {
@@ -219,10 +204,6 @@ export const REGIONS: Experience[] = [
     currency: 'SGD',
     occasion: 'Year-end 2026',
     occasionHint: 'Year-end 2026, 11.11, birthday…',
-    bannerLead: '11.11 is 11 Nov.',
-    bannerBody:
-      'Add gifts from Shopee, Lazada, Rakuten, or Amazon before the sale so the group buys what you want. Switch the price to SGD, AUD, JPY, or whatever that shop uses.',
-    bannerCta: 'Start a year-end list',
     lede: 'Build a wishlist from Shopee, Lazada, Amazon, and anywhere you shop. Send one link in Teams, Slack, or email, and colleagues can reserve a gift so nobody doubles up.',
     steps: [
       {

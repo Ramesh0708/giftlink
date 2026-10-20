@@ -11,7 +11,7 @@ const STORES = [
     name: 'Amazon',
     hue: '#ff9900',
     how: 'On Amazon: Wish List → your list → Share → Anyone with the link. Paste that URL here.',
-    placeholder: 'https://www.amazon.in/hz/wishlist/ls/…',
+    placeholder: 'https://www.amazon.com/hz/wishlist/ls/…',
   },
   {
     id: 'flipkart' as const,

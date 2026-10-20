@@ -2,13 +2,13 @@ export const landings = [
   {
     path: '/diwali-gift-list',
     nav: 'Diwali gift list',
-    badge: 'Early November',
+    badge: '8 Nov',
     title: 'Diwali gift list — share what you actually want | GiftLink',
     description:
       'Make a Diwali gift list from Amazon and Flipkart, then share one WhatsApp link. Friends claim a gift so the family doesn’t double up.',
-    eyebrow: 'Diwali is in early November',
+    eyebrow: 'Diwali is 8 Nov 2026',
     h1: 'A Diwali gift list your family can actually use',
-    lede: 'Diwali shopping starts before the week of the festival. Put the sweets, the diyas, and the one thing you really want on a list, then send it on WhatsApp.',
+    lede: 'Diwali is 8 Nov 2026. Put the sweets, the diyas, and the one thing you really want on a list, then send it on WhatsApp.',
     points: [
       {
         h: 'Paste the product, not a hint',
