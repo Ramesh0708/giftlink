@@ -14,6 +14,10 @@ type LandingPage = {
 
 declare module '*.mjs' {
   export const landings: LandingPage[]
+  export function occasionBanner(
+    region: string,
+    now?: Date,
+  ): { lead: string; body: string; cta: string } | null
   export function needsShareNudge(
     list: { published?: boolean; publishedAt?: string | null; updatedAt?: string; opens?: number },
     now?: number,
