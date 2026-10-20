@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { storeMeta } from '../data/stores'
 import { fetchPublic, reserveItem, unreserveItem } from '../lib/api'
@@ -11,6 +11,18 @@ import { gaEvent, track } from '../lib/track'
 import type { Wishlist } from '../types'
 
 const NAME_KEY = 'giftlink:gifterName'
+
+function tiltOf(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) hash = (hash + id.charCodeAt(i) * (i + 3)) % 7
+  return hash - 3
+}
+
+function tapeOf(id: string) {
+  let hash = 0
+  for (const char of id) hash += char.charCodeAt(0)
+  return String(hash % 4)
+}
 
 export default function View() {
   const { id = '' } = useParams()
@@ -82,15 +94,17 @@ export default function View() {
 
   if (error && !list) {
     return (
-      <section className="section">
-        <h1>This list isn’t available</h1>
-        <p className="lede">
-          {error}. If it’s new, the owner needs to add a gift — it goes live
-          automatically — then send the link again.
-        </p>
-        <Link className="btn btn-primary" to="/">
-          Back home
-        </Link>
+      <section className="desk">
+        <div className="desk-note">
+          <h1>This list isn’t available</h1>
+          <p className="desk-message">
+            {error}. If it’s new, the owner needs to add a gift — it goes live
+            automatically — then send the link again.
+          </p>
+          <Link className="btn btn-primary" to="/">
+            Back home
+          </Link>
+        </div>
       </section>
     )
   }
@@ -112,18 +126,16 @@ export default function View() {
   }
 
   return (
-    <section>
-      <div className="toolbar">
-        <div>
-          <p className="eyebrow">{list.occasion}</p>
-          <h1>Gifts for {who || 'someone lovely'}</h1>
-          <p className="lede">{displayNote(list.message, who)}</p>
-          <p className="meta">
-            {openCount} of {list.items.length} still free to claim. They won’t
-            see who said they’d buy it.
-          </p>
-        </div>
-        <div className="nav-actions">
+    <section className="desk">
+      <header className="desk-note">
+        <p className="desk-occasion">{list.occasion}</p>
+        <h1>Gifts for {who || 'someone lovely'}</h1>
+        <p className="desk-message">{displayNote(list.message, who)}</p>
+        <p className="desk-count">
+          {openCount} of {list.items.length} still free to claim. They won’t
+          see who said they’d buy it.
+        </p>
+        <div className="desk-share">
           <a
             className="btn btn-whatsapp"
             href={whatsappForwardUrl(publicShareUrl(window.location.origin, id), list.recipient, list.occasion)}
@@ -144,9 +156,9 @@ export default function View() {
             {copied ? 'Copied' : 'Copy link'}
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="card" style={{ marginBottom: 22, maxWidth: 420 }}>
+      <div className="index-card">
         <p className="meta">
           {experience?.gifterHint ??
             'Type your name, tap I’ll get this, then buy it from the product link. They won’t see who claimed which gift.'}
@@ -159,52 +171,61 @@ export default function View() {
             placeholder={experience?.nameExample ?? 'Your name'}
           />
         </label>
-        {error && <p className="meta">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
 
       <OwnListCta id={id} afterClaim={false} />
 
       {list.items.length === 0 ? (
-        <div className="card empty">
-          <h3>No gifts on this list yet</h3>
+        <div className="empty">
+          <h2>No gifts on this list yet</h2>
         </div>
       ) : (
-        <div className="items">
+        <div className="desk-grid">
           {list.items.map((item) => {
             const store = storeMeta(item.store)
             const claimed = Boolean(item.claimed || item.reservedBy)
             const mine = Boolean(item.mine)
             return (
-              <article className="item-card" key={item.id}>
-                {item.image ? (
-                  <img
-                    className="item-photo"
-                    src={item.image}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="item-photo" />
-                )}
-                <div className="item-body">
-                  <div className="item-store" style={{ color: store.hue }}>
-                    {store.name}
-                  </div>
-                  <strong>{item.title}</strong>
+              <article
+                className="polaroid"
+                key={item.id}
+                data-tape={tapeOf(item.id)}
+                style={{ '--tilt': `${tiltOf(item.id)}deg` } as CSSProperties}
+              >
+                <span className="washi" aria-hidden="true" />
+                <div className="polaroid-frame">
+                  {item.image ? (
+                    <img
+                      className="polaroid-photo"
+                      src={item.image}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.style.visibility = 'hidden'
+                      }}
+                    />
+                  ) : (
+                    <div className="polaroid-photo" />
+                  )}
+                  {claimed && <span className="stamp">Claimed</span>}
+                </div>
+                <div className="polaroid-caption">
+                  <p className="polaroid-store">{store.name}</p>
+                  <h2 className="polaroid-title">{item.title}</h2>
                   {item.price != null && (
                     <div className="price">{money(item.price, item.currency)}</div>
                   )}
                   {item.notes && <p className="meta">{item.notes}</p>}
-                  {claimed && (
-                    <span className="pill taken">{mine ? 'You’re getting this' : 'Claimed'}</span>
-                  )}
-                  <div className="item-actions">
+                  {mine && <p className="mine-note">You’re getting this</p>}
+                  <div className="polaroid-actions">
                     {item.url && (
                       <a
-                        className="btn btn-primary btn-sm"
+                        className="buy-link"
                         href={item.url}
                         target="_blank"
                         rel="noreferrer"
@@ -215,7 +236,8 @@ export default function View() {
                     )}
                     {!claimed && (
                       <button
-                        className="btn btn-ghost btn-sm"
+                        type="button"
+                        className="gift-tag"
                         disabled={busy === item.id}
                         onClick={() => void claim(item.id)}
                       >
@@ -224,7 +246,8 @@ export default function View() {
                     )}
                     {mine && (
                       <button
-                        className="btn btn-ghost btn-sm"
+                        type="button"
+                        className="unclaim"
                         disabled={busy === item.id}
                         onClick={() => void undo(item.id)}
                       >
