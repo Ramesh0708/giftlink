@@ -430,9 +430,15 @@ function productFromSchema(node) {
 }
 
 const FLIPKART_ROME = [
-  'https://2.rome.api.flipkart.com/api/4/page/fetch',
   'https://1.rome.api.flipkart.com/api/4/page/fetch',
+  'https://2.rome.api.flipkart.com/api/4/page/fetch',
 ]
+
+const FLIPKART_MOBILE_UA =
+  'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
+
+const FLIPKART_DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 export function flipkartTitleFromUrl(rawUrl) {
   let url
@@ -463,40 +469,132 @@ export function flipkartTitleFromUrl(rawUrl) {
   return pid ? `${title} (${pid})` : title
 }
 
-function productFromRome(data, pageUrl) {
+function upgradeFlipkartImage(url) {
+  return String(url || '').replace(/(\/image\/)\d+\/\d+\//, '$1800/800/')
+}
+
+function flipkartSlug(url) {
+  return (
+    decodeURIComponent(String(url.pathname || '').split('/p/')[0] || '')
+      .split('/')
+      .filter(Boolean)
+      .pop() || ''
+  )
+}
+
+export function flipkartCardsFromHtml(html) {
+  const cards = []
+  const re = /href="([^"]*\/p\/(itm[a-z0-9]+)[^"]*)"[\s\S]{0,14000}?<\/a>/gi
+  for (const match of String(html || '').matchAll(re)) {
+    const chunk = match[0]
+    const href = decode(match[1])
+    const title = cleanTitle(chunk.match(/\balt="([^"]+)"/i)?.[1] || '')
+    const image = upgradeFlipkartImage(chunk.match(/\bsrc="(https:\/\/rukmini[^"]+)"/i)?.[1] || '')
+    const price = asNumber(chunk.match(/₹\s*([\d,]+)/)?.[1])
+    if (!title || isJunkTitle(title)) continue
+    const pid = href.match(/[?&]pid=([A-Za-z0-9]+)/)?.[1] || ''
+    cards.push({ href, itm: match[2].toLowerCase(), pid: pid.toUpperCase(), title, image, price })
+  }
+  return cards
+}
+
+export function flipkartCardForUrl(html, rawUrl) {
+  let url
+  try {
+    url = new URL(String(rawUrl || ''))
+  } catch {
+    return null
+  }
+  const cards = flipkartCardsFromHtml(html)
+  const itm = url.pathname.match(/\/(itm[a-z0-9]+)/i)?.[1]?.toLowerCase() || ''
+  const pid = (url.searchParams.get('pid') || '').toUpperCase()
+  const slug = flipkartSlug(url).toLowerCase()
+  return (
+    cards.find((card) => itm && card.itm === itm) ||
+    cards.find((card) => pid && card.pid === pid) ||
+    cards.find((card) => slug && card.href.toLowerCase().includes(`/${slug}/p/`)) ||
+    null
+  )
+}
+
+export function productFromRome(data, pageUrl) {
   const schema = data?.RESPONSE?.pageData?.seoData?.schema
   const nodes = Array.isArray(schema) ? schema : schema ? [schema] : []
   let best = null
   for (const node of nodes) {
     const product = productFromSchema(node)
     if (!isUsableProduct(product)) continue
+    if (product.image) product.image = upgradeFlipkartImage(product.image)
     if (!best || (product.price && !best.price) || (product.image && !best.image)) best = product
     if (product.price && product.image) {
       best = product
       break
     }
   }
+  if (best && best.price == null) {
+    const final = JSON.stringify(data).match(/"finalPrice":([0-9.]+)/)
+    if (final) best = { ...best, price: asNumber(final[1]) }
+  }
   if (!best) return null
   return { ...best, url: pageUrl }
 }
 
 async function requestRome(endpoint, pageUri, pageUrl) {
-  const res = await fetch(endpoint, {
-    method: 'POST',
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: '*/*',
+        'User-Agent': FLIPKART_MOBILE_UA,
+        'X-User-Agent': `${FLIPKART_MOBILE_UA} FKUA/msite/0.0.3/msite/Mobile`,
+        Origin: 'https://www.flipkart.com',
+        Referer: 'https://www.flipkart.com/',
+      },
+      body: JSON.stringify({
+        pageUri,
+        pageContext: { fetchSeoData: true },
+      }),
+      signal: AbortSignal.timeout(5000),
+    })
+    if (res.status === 429 || res.status === 503) {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 350))
+        continue
+      }
+      return null
+    }
+    if (!res.ok) return null
+    try {
+      return productFromRome(await res.json(), pageUrl)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+async function fetchFlipkartSearch(url) {
+  const slug = flipkartSlug(url)
+  if (!slug) return null
+  const query = slug.replace(/[-_]+/g, ' ')
+  const res = await fetch(`https://www.flipkart.com/search?q=${encodeURIComponent(query)}`, {
+    redirect: 'follow',
     headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'User-Agent': MOBILE_HEADERS['User-Agent'],
-      'X-User-Agent': `${MOBILE_HEADERS['User-Agent']} FKUA/msite/0.0.3/msite/Mobile`,
+      ...DESKTOP_HEADERS,
+      'User-Agent': FLIPKART_DESKTOP_UA,
     },
-    body: JSON.stringify({
-      pageUri,
-      pageContext: { fetchSeoData: true },
-    }),
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(7000),
   })
   if (!res.ok) return null
-  return productFromRome(await res.json(), pageUrl)
+  const card = flipkartCardForUrl(await res.text(), url.href)
+  if (!card) return null
+  return {
+    title: card.title,
+    image: card.image && !isJunkImage(card.image) ? card.image : '',
+    price: card.price,
+    url: url.href,
+  }
 }
 
 function raceUsable(tasks) {
@@ -536,8 +634,9 @@ async function fetchFlipkartApi(url) {
   if (!mobile.hostname.startsWith('m.')) mobile.hostname = `m.${mobile.hostname}`
   return raceUsable([
     ...FLIPKART_ROME.map((endpoint) => requestRome(endpoint, pageUri, url.href)),
-    fetchHtml(url.href, MOBILE_HEADERS),
-    fetchHtml(mobile.href, MOBILE_HEADERS),
+    fetchFlipkartSearch(url),
+    fetchHtml(url.href, { ...MOBILE_HEADERS, 'User-Agent': FLIPKART_MOBILE_UA }),
+    fetchHtml(mobile.href, { ...MOBILE_HEADERS, 'User-Agent': FLIPKART_MOBILE_UA }),
   ])
 }
 

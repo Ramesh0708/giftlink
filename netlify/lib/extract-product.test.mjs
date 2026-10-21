@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { extractProduct, flipkartTitleFromUrl, isJunkTitle, isUsableProduct } from './extract-product.mjs'
+import {
+  extractProduct,
+  flipkartCardForUrl,
+  flipkartCardsFromHtml,
+  flipkartTitleFromUrl,
+  isJunkTitle,
+  isUsableProduct,
+  productFromRome,
+} from './extract-product.mjs'
 
 test('ignores the Amazon search shortcut and reads the product title and price', () => {
   const html = `<!doctype html><title>Amazon.in</title>
@@ -74,6 +82,75 @@ test('builds a Flipkart title from the slug and pid when the shop blocks the pag
   assert.match(title, /ACCHCJW3HZ2GVH29/)
   assert.equal(isJunkTitle(title), false)
   assert.equal(flipkartTitleFromUrl('https://www.flipkart.com/'), '')
+})
+
+test('reads a Flipkart search card and matches item id, pid, or the product slug', () => {
+  const html = `
+    <a href="/noise-earbuds/p/itm00000000000001?pid=ACCJUNK000000001">
+      <img alt="Online Shopping India" src="https://rukminim2.flixcart.com/www/800/800/promos/banner.png" />
+      ₹197
+    </a>
+    <div>Under ₹10,000</div>
+    <a href="/apple-iphone-15-black-128-gb/p/itm3234701b0863a?pid=MOBHQV9YR4CBTD9D&amp;lid=LST1">
+      <img alt="Apple iPhone 15 (Black, 128 GB)" src="https://rukminim2.flixcart.com/image/312/312/xif0q/mobile/s/p/z/-original-imahqvadjn9nthhu.jpeg?q=70" />
+      ₹67,999
+      <div>₹79,900</div>
+    </a>`
+  const cards = flipkartCardsFromHtml(html)
+  assert.equal(cards.length, 1)
+  assert.equal(cards[0].title, 'Apple iPhone 15 (Black, 128 GB)')
+  assert.equal(cards[0].price, 67999)
+  assert.match(cards[0].image, /\/image\/800\/800\//)
+
+  const exact = flipkartCardForUrl(
+    html,
+    'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm3234701b0863a?pid=MOBHQV9YR4CBTD9D',
+  )
+  assert.equal(exact.itm, 'itm3234701b0863a')
+
+  const byPid = flipkartCardForUrl(
+    html,
+    'https://www.flipkart.com/something-else/p/itm999?pid=MOBHQV9YR4CBTD9D',
+  )
+  assert.equal(byPid.title, 'Apple iPhone 15 (Black, 128 GB)')
+
+  const held = flipkartCardForUrl(
+    html,
+    'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm6ac6485515ae4',
+  )
+  assert.equal(held.pid, 'MOBHQV9YR4CBTD9D')
+  assert.equal(held.price, 67999)
+})
+
+test('reads Flipkart Rome schema and falls back to finalPrice', () => {
+  const data = productFromRome(
+    {
+      RESPONSE: {
+        pageData: {
+          seoData: {
+            schema: [
+              {
+                '@type': 'Product',
+                name: 'Apple iPhone 15 (Black, 128 GB)',
+                image: [
+                  'https://rukminim2.flixcart.com/image/312/312/xif0q/mobile/s/p/z/-original-imahqvadjn9nthhu.jpeg',
+                ],
+              },
+            ],
+          },
+        },
+      },
+      finalPrice: 74900,
+    },
+    'https://www.flipkart.com/apple-iphone-15-black-128-gb/p/itm3234701b0863a',
+  )
+  assert.equal(data.title, 'Apple iPhone 15 (Black, 128 GB)')
+  assert.equal(data.price, 74900)
+  assert.match(data.image, /\/image\/800\/800\//)
+  assert.equal(
+    productFromRome({ ERROR_MESSAGE: 'Product is ON_HOLD, cannot be processed' }, 'https://www.flipkart.com/x/p/itm1'),
+    null,
+  )
 })
 
 test('reads JSON-LD product name, offer price, and image', () => {
