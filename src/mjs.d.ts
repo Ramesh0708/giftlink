@@ -14,6 +14,7 @@ type LandingPage = {
 
 declare module '*.mjs' {
   export const landings: LandingPage[]
+  export function withTrailingSlash(path: string): string
   export function occasionBanner(
     region: string,
     now?: Date,

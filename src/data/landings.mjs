@@ -1,3 +1,9 @@
+export function withTrailingSlash(path) {
+  const value = String(path || '/')
+  if (value === '/') return '/'
+  return value.endsWith('/') ? value : `${value}/`
+}
+
 export const landings = [
   {
     path: '/diwali-gift-list',
