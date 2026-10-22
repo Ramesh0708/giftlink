@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { landings } from '../src/data/landings.mjs'
+import { landings, withTrailingSlash } from '../src/data/landings.mjs'
+import { sitemapXml } from '../src/data/sitemap.mjs'
 
 const origin = (process.env.URL || 'https://wiishlist.netlify.app').replace(/\/$/, '')
 const dist = path.resolve('dist')
@@ -52,15 +53,26 @@ const home = {
   <p>Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop. Add a gift and the list goes live. Share one WhatsApp link, and friends can claim a gift so nobody doubles up.</p>
   <p><a href="/new">Start a wishlist</a> <a href="/how-to">How to use</a></p>
   <h2>Start from an occasion</h2>
-  <ul>
-    ${landings.map((page) => `<li><a href="${page.path}">${escapeHtml(page.nav)}</a> — ${escapeHtml(page.eyebrow)}</li>`).join('\n    ')}
-  </ul>
+  <p>Diwali is 8 Nov. The other lists work any time of year.</p>
+  <div class="idea-grid">
+    ${landings
+      .map((page) => {
+        const badge = page.badge ? `<span class="idea-badge">${escapeHtml(page.badge)}</span>` : ''
+        return `<a class="card idea-card" href="${withTrailingSlash(page.path)}">${badge}<strong>${escapeHtml(page.nav)}</strong><span class="meta">${escapeHtml(page.eyebrow)}</span></a>`
+      })
+      .join('\n    ')}
+  </div>
   <h2>How it works</h2>
   <ol>
     <li>Paste a product link from Amazon, Flipkart, or any shop.</li>
     <li>Share on WhatsApp. The list is live as soon as the first gift is saved.</li>
     <li>A friend taps “I’ll get this” so two people don’t buy the same thing. You won’t see who claimed it.</li>
   </ol>
+  <footer class="site">
+    <nav class="occasion-links" aria-label="Occasion lists">
+      ${landings.map((page) => `<a href="${withTrailingSlash(page.path)}">${escapeHtml(page.nav)}</a>`).join('\n      ')}
+    </nav>
+  </footer>
 </main>`,
 }
 
@@ -113,7 +125,7 @@ function replaceTag(html, pattern, next, label) {
 }
 
 function page(source, spec) {
-  const url = `${origin}${spec.path === '/' ? '/' : spec.path}`
+  const url = `${origin}${spec.path === '/' ? '/' : withTrailingSlash(spec.path)}`
   let html = source.replaceAll('https://wiishlist.netlify.app', origin)
   html = replaceTag(html, /<title>[\s\S]*?<\/title>/, `<title>${spec.title}</title>`, 'title')
   html = replaceTag(
@@ -161,6 +173,9 @@ function page(source, spec) {
 }
 
 const homeHtml = page(template, home)
+if (!homeHtml.includes('href="/diwali-gift-list/"')) {
+  throw new Error('Prerendered home is missing the static Diwali gift list link')
+}
 if (!homeHtml.includes('name="google-site-verification"')) {
   throw new Error('Prerendered home is missing the Google site verification tag')
 }
@@ -196,12 +211,10 @@ if (sample) {
   }
 }
 
-const urls = ['/', '/how-to', ...landings.map((landing) => landing.path)]
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((loc) => `  <url><loc>${origin}${loc === '/' ? '/' : loc}</loc></url>`).join('\n')}
-</urlset>
-`
+const sitemap = sitemapXml(origin)
+if (!sitemap.includes(`${origin}/diwali-gift-list/</loc>`) || !sitemap.includes('<lastmod>')) {
+  throw new Error('Sitemap is missing the Diwali URL or lastmod')
+}
 fs.writeFileSync(path.join(dist, 'sitemap.xml'), sitemap)
 const robots = `User-agent: *
 Allow: /api/og/
@@ -210,4 +223,7 @@ Disallow: /me/
 
 Sitemap: ${origin}/sitemap.xml
 `
+if (!robots.includes(`Sitemap: ${origin}/sitemap.xml`)) {
+  throw new Error('robots.txt is missing the sitemap line')
+}
 fs.writeFileSync(path.join(dist, 'robots.txt'), robots)

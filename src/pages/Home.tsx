@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import StepPlayer from '../components/StepPlayer'
-import { landings } from '../data/landings.mjs'
+import { landings, withTrailingSlash } from '../data/landings.mjs'
 import { occasionBanner } from '../lib/occasions.mjs'
 import { displayPhoto } from '../lib/photos.mjs'
 import { storeMeta } from '../data/stores'
@@ -23,6 +23,7 @@ export default function Home() {
       {banner ? (
         <aside className="sale-banner">
           <strong>{banner.lead}</strong> {banner.body}{' '}
+          {experience.id === 'india' ? <Link to="/diwali-gift-list/">Diwali gift list</Link> : null}{' '}
           <Link to="/new">{banner.cta}</Link>
         </aside>
       ) : null}
@@ -92,7 +93,7 @@ export default function Home() {
         </p>
         <div className="idea-grid">
           {landings.map((page) => (
-            <Link className="card idea-card" key={page.path} to={page.path}>
+            <Link className="card idea-card" key={page.path} to={withTrailingSlash(page.path)}>
               {page.badge ? <span className="idea-badge">{page.badge}</span> : null}
               <strong>{page.nav}</strong>
               <span className="meta">{page.eyebrow}</span>
@@ -136,6 +137,13 @@ export default function Home() {
         ) : (
           experience.footer
         )}
+        <nav className="occasion-links" aria-label="Occasion lists">
+          {landings.map((page) => (
+            <Link key={page.path} to={withTrailingSlash(page.path)}>
+              {page.nav}
+            </Link>
+          ))}
+        </nav>
       </footer>
     </>
   )

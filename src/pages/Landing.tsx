@@ -1,9 +1,10 @@
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { landings } from '../data/landings.mjs'
+import { landings, withTrailingSlash } from '../data/landings.mjs'
 
 export default function Landing() {
   const { pathname } = useLocation()
-  const page = landings.find((item) => item.path === pathname)
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  const page = landings.find((item) => item.path === path)
   if (!page) return <Navigate to="/" replace />
 
   return (
@@ -43,7 +44,7 @@ export default function Landing() {
           .map((item, index) => (
             <span key={item.path}>
               {index > 0 ? ' · ' : null}
-              <Link to={item.path}>{item.nav}</Link>
+              <Link to={withTrailingSlash(item.path)}>{item.nav}</Link>
             </span>
           ))}
       </p>
