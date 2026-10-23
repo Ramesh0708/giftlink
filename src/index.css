@@ -207,6 +207,19 @@ img { max-width: 100%; display: block; }
   align-items: center;
   padding: 36px 0 20px;
 }
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.hero-cta {
+  min-height: 54px;
+  padding: 14px 22px;
+  font-size: 1.08rem;
+  box-shadow: 0 10px 24px rgba(139, 41, 66, 0.28);
+}
 .eyebrow {
   color: var(--wine);
   font-weight: 800;
@@ -1231,6 +1244,11 @@ body:has(.desk[data-theme="santa"]) { background-color: #f3f7fb; }
 .desk[data-theme="santa"] .gift-tag { border-color: #1f6b45; }
 
 @media (max-width: 840px) {
+  .home-stack { display: flex; flex-direction: column; }
+  .home-stack .hero { order: -1; padding-top: 16px; }
+  .home-stack .sale-banner { order: 1; }
+  .hero-actions { display: grid; }
+  .hero-cta { width: 100%; justify-content: center; }
   .hero, .grid-3, .row-2, .row-3, .link-grid, .region-grid { grid-template-columns: 1fr; }
   .hero-card { rotate: 0; }
   .nav { border-radius: 22px; align-items: flex-start; }

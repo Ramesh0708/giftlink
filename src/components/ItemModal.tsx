@@ -38,6 +38,12 @@ export default function ItemModal({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const previewReq = useRef(0)
+  const linkRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (initial) return
+    linkRef.current?.focus()
+  }, [initial])
 
   const set = <K extends keyof WishItem>(key: K, value: WishItem[K]) => {
     const next = { ...itemRef.current, [key]: value }
@@ -138,6 +144,8 @@ export default function ItemModal({
           <label>
             Product link
             <input
+              ref={linkRef}
+              autoFocus={!initial}
               value={item.url}
               onChange={(e) => set('url', e.target.value)}
               onBlur={() => void fetchPreview()}

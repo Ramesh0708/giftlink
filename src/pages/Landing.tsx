@@ -1,5 +1,6 @@
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { landings, withTrailingSlash } from '../data/landings.mjs'
+import { track } from '../lib/track'
 
 export default function Landing() {
   const { pathname } = useLocation()
@@ -12,13 +13,26 @@ export default function Landing() {
       <p className="eyebrow">{page.eyebrow}</p>
       <h1>{page.h1}</h1>
       <p className="lede">{page.lede}</p>
-      <p>
-        <Link className="btn btn-primary" to="/new">
-          Start a wishlist
-        </Link>{' '}
-        <Link className="btn btn-ghost" to="/how-to">
-          How to use
-        </Link>
+      <p className="hero-actions">
+        {page.path === '/diwali-gift-list' ? (
+          <>
+            <Link className="btn btn-primary hero-cta" to="/new?item=1" onClick={() => track('add_first')}>
+              Add your first item
+            </Link>
+            <Link className="btn btn-ghost" to="/new?sample=diwali" onClick={() => track('sample')}>
+              Start with a sample Diwali list
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link className="btn btn-primary" to="/new">
+              Start a wishlist
+            </Link>
+            <Link className="btn btn-ghost" to="/how-to">
+              How to use
+            </Link>
+          </>
+        )}
       </p>
       <div className="landing-points">
         {page.points.map((point) => (

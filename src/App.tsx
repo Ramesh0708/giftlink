@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { diwaliSampleItems } from './data/diwali-sample.mjs'
 import { landings } from './data/landings.mjs'
 import { track, trackPage } from './lib/track'
 import { hitSite } from './lib/api'
@@ -43,9 +44,16 @@ function NewList() {
   const { region, experience } = useRegion()
   useEffect(() => {
     if (!region || !experience) return
+    const sample = params.get('sample') === 'diwali'
+    const focusItem = params.get('item') === '1'
     const pending = sessionStorage.getItem('giftlink:creating')
-    if (pending && loadList(pending)) {
-      navigate(`/me/${pending}`, { replace: true })
+    const existing = pending ? loadList(pending) : null
+    if (sample && existing && existing.items.length > 0) {
+      navigate(`/me/${existing.id}`, { replace: true })
+      return
+    }
+    if (!sample && existing && existing.items.length === 0) {
+      navigate(focusItem ? `/me/${existing.id}?item=1` : `/me/${existing.id}`, { replace: true })
       return
     }
     const ref = params.get('ref') || ''
@@ -54,17 +62,17 @@ function NewList() {
       id: shortId(),
       ownerKey: uid(),
       recipient: '',
-      occasion: experience.occasion,
+      occasion: sample ? 'Diwali 2026' : experience.occasion,
       message: defaultNote('', region),
       updatedAt: new Date().toISOString(),
-      items: [],
+      items: sample ? diwaliSampleItems(() => uid()) : [],
       referredBy: referredBy || undefined,
     }
     saveList(list)
     sessionStorage.setItem('giftlink:creating', list.id)
     track('created', { listId: list.id })
     if (referredBy) track('ref', { listId: list.id, ref: referredBy })
-    navigate(`/me/${list.id}`, { replace: true })
+    navigate(focusItem ? `/me/${list.id}?item=1` : `/me/${list.id}`, { replace: true })
   }, [navigate, region, experience, params])
   return <p className="meta">Creating your list…</p>
 }

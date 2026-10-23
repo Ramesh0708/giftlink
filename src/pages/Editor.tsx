@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
 import { isDefaultOccasion } from '../data/regions'
@@ -17,6 +17,7 @@ import type { StoredList, StoreLink, WishItem } from '../types'
 export default function Editor() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const { region, experience } = useRegion()
   const [list, setList] = useState<StoredList | null>(() => loadList(id))
   const [modal, setModal] = useState<WishItem | 'new' | null>(null)
@@ -89,6 +90,10 @@ export default function Editor() {
       window.clearTimeout(syncTimer.current)
     }
   }, [id])
+
+  useEffect(() => {
+    if (params.get('item') === '1') setModal('new')
+  }, [id, params])
 
   useEffect(() => {
     if (!region || !experience) return
@@ -500,7 +505,14 @@ export default function Editor() {
       {modal && (
         <ItemModal
           initial={modal === 'new' ? undefined : modal}
-          onClose={() => setModal(null)}
+          onClose={() => {
+            setModal(null)
+            if (params.get('item') === '1') {
+              const next = new URLSearchParams(params)
+              next.delete('item')
+              setParams(next, { replace: true })
+            }
+          }}
           onSave={saveItem}
         />
       )}
