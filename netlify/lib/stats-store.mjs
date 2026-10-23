@@ -11,6 +11,8 @@ export const EMPTY_STATS = {
   claims: 0,
   buyClicks: 0,
   refSignups: 0,
+  addFirst: 0,
+  sampleDiwali: 0,
 }
 
 const EVENT_FIELDS = {
@@ -30,6 +32,8 @@ const EVENT_FIELDS = {
   buyClicks: 'buyClicks',
   ref: 'refSignups',
   refSignups: 'refSignups',
+  add_first: 'addFirst',
+  sample: 'sampleDiwali',
 }
 
 export function fieldForEvent(event) {

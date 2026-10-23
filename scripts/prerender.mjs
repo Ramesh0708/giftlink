@@ -50,8 +50,8 @@ const home = {
   body: `<main>
   <p>Share what you actually want</p>
   <h1>Gifts without the awkward guessing.</h1>
+  <p><a href="/new?item=1">Add your first item</a> <a href="/new?sample=diwali">Start with a sample Diwali list</a></p>
   <p>Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop. Add a gift and the list goes live. Share one WhatsApp link, and friends can claim a gift so nobody doubles up.</p>
-  <p><a href="/new">Start a wishlist</a> <a href="/how-to">How to use</a></p>
   <h2>Start from an occasion</h2>
   <p>Diwali is 8 Nov. The other lists work any time of year.</p>
   <div class="idea-grid">
@@ -110,7 +110,11 @@ function landingBody(page) {
   <p>${escapeHtml(page.eyebrow)}</p>
   <h1>${escapeHtml(page.h1)}</h1>
   <p>${escapeHtml(page.lede)}</p>
-  <p><a href="/new">Start a wishlist</a></p>
+  <p>${
+    page.path === '/diwali-gift-list'
+      ? '<a href="/new?item=1">Add your first item</a> <a href="/new?sample=diwali">Start with a sample Diwali list</a>'
+      : '<a href="/new">Start a wishlist</a>'
+  }</p>
   ${page.points
     .map((point) => `<h2>${escapeHtml(point.h)}</h2>\n  <p>${escapeHtml(point.p)}</p>`)
     .join('\n  ')}
@@ -173,6 +177,9 @@ function page(source, spec) {
 }
 
 const homeHtml = page(template, home)
+if (!homeHtml.includes('href="/new?item=1"') || !homeHtml.includes('href="/new?sample=diwali"')) {
+  throw new Error('Prerendered home is missing the first-item calls to action')
+}
 if (!homeHtml.includes('href="/diwali-gift-list/"')) {
   throw new Error('Prerendered home is missing the static Diwali gift list link')
 }

@@ -55,7 +55,11 @@ test('stats keep the original counters and add funnel fields', () => {
     claims: 0,
     buyClicks: 0,
     refSignups: 0,
+    addFirst: 0,
+    sampleDiwali: 0,
   })
+  assert.equal(fieldForEvent('add_first'), 'addFirst')
+  assert.equal(fieldForEvent('sample'), 'sampleDiwali')
   assert.equal(fieldForEvent('visits'), 'visits')
   assert.equal(fieldForEvent('share'), 'shares')
   assert.equal(fieldForEvent('buy'), 'buyClicks')

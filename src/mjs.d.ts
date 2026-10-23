@@ -15,6 +15,18 @@ type LandingPage = {
 declare module '*.mjs' {
   export const landings: LandingPage[]
   export function withTrailingSlash(path: string): string
+  export function diwaliSampleItems(makeId?: (index: number) => string): {
+    id: string
+    title: string
+    url: string
+    image: string
+    price: number
+    currency: 'INR'
+    store: 'amazon'
+    notes: string
+    priority: 'love' | 'want' | 'nice'
+    reservedBy: null
+  }[]
   export function occasionBanner(
     region: string,
     now?: Date,

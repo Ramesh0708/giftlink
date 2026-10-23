@@ -7,6 +7,8 @@ const GA_EVENTS: Record<string, string> = {
   claim: 'claim',
   buy: 'buy_click',
   ref: 'ref_signup',
+  add_first: 'add_first_item',
+  sample: 'sample_diwali',
 }
 
 type Gtag = (...args: unknown[]) => void

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { track } from '../lib/track'
 import StepPlayer from '../components/StepPlayer'
 import { landings, withTrailingSlash } from '../data/landings.mjs'
 import { occasionBanner } from '../lib/occasions.mjs'
@@ -20,26 +21,27 @@ export default function Home() {
 
   return (
     <>
+      <div className="home-stack">
       {banner ? (
         <aside className="sale-banner">
           <strong>{banner.lead}</strong> {banner.body}{' '}
           {experience.id === 'india' ? <Link to="/diwali-gift-list/">Diwali gift list</Link> : null}{' '}
-          <Link to="/new">{banner.cta}</Link>
+          <Link to="/new?item=1">{banner.cta}</Link>
         </aside>
       ) : null}
       <section className="hero">
         <div>
           <p className="eyebrow">Share what you actually want</p>
           <h1>Gifts without the awkward guessing.</h1>
-          <p className="lede">{experience.lede}</p>
-          <p>
-            <Link className="btn btn-primary" to="/new">
-              Start a wishlist
-            </Link>{' '}
-            <Link className="btn btn-ghost" to="/how-to">
-              How to use
+          <p className="hero-actions">
+            <Link className="btn btn-primary hero-cta" to="/new?item=1" onClick={() => track('add_first')}>
+              Add your first item
+            </Link>
+            <Link className="btn btn-ghost" to="/new?sample=diwali" onClick={() => track('sample')}>
+              Start with a sample Diwali list
             </Link>
           </p>
+          <p className="lede">{experience.lede}</p>
         </div>
         <div className="hero-card" aria-hidden="true">
           {experience.heroGifts.map((gift) => (
@@ -63,6 +65,7 @@ export default function Home() {
           ))}
         </div>
       </section>
+      </div>
 
       <section className="section">
         <h2>How it works</h2>
