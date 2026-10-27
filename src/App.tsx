@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { diwaliSampleItems } from './data/diwali-sample.mjs'
 import { landings } from './data/landings.mjs'
-import { track, trackPage } from './lib/track'
+import { track, trackNewList, trackPage } from './lib/track'
 import { hitSite } from './lib/api'
 import { shortId, uid } from './lib/ids'
 import { defaultNote } from './lib/note'
@@ -45,7 +45,6 @@ function NewList() {
   useEffect(() => {
     if (!region || !experience) return
     const sample = params.get('sample') === 'diwali'
-    const focusItem = params.get('item') === '1'
     const pending = sessionStorage.getItem('giftlink:creating')
     const existing = pending ? loadList(pending) : null
     if (sample && existing && existing.items.length > 0) {
@@ -53,7 +52,7 @@ function NewList() {
       return
     }
     if (!sample && existing && existing.items.length === 0) {
-      navigate(focusItem ? `/me/${existing.id}?item=1` : `/me/${existing.id}`, { replace: true })
+      navigate(`/me/${existing.id}?item=1`, { replace: true })
       return
     }
     const ref = params.get('ref') || ''
@@ -70,9 +69,11 @@ function NewList() {
     }
     saveList(list)
     sessionStorage.setItem('giftlink:creating', list.id)
-    track('created', { listId: list.id })
-    if (referredBy) track('ref', { listId: list.id, ref: referredBy })
-    navigate(focusItem ? `/me/${list.id}?item=1` : `/me/${list.id}`, { replace: true })
+    sessionStorage.setItem(`giftlink:nudge-share:${list.id}`, '1')
+    void trackNewList(list.id, sample ? list.items.map((item) => item.id) : []).then(() => {
+      if (referredBy) track('ref', { listId: list.id, ref: referredBy })
+    })
+    navigate(sample ? `/me/${list.id}` : `/me/${list.id}?item=1`, { replace: true })
   }, [navigate, region, experience, params])
   return <p className="meta">Creating your list…</p>
 }

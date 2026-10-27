@@ -40,6 +40,13 @@ export function fieldForEvent(event) {
   return EVENT_FIELDS[String(event || '')] || ''
 }
 
+export function statAmount(field, raw) {
+  if (field !== 'items') return 1
+  const amount = Number(raw)
+  if (!Number.isInteger(amount) || amount < 1) return 1
+  return Math.min(50, amount)
+}
+
 export function normalizeStats(raw) {
   const stats = { ...EMPTY_STATS }
   if (!raw || typeof raw !== 'object') return stats

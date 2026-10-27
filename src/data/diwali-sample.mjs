@@ -38,9 +38,9 @@ const GIFTS = [
   },
 ]
 
-export function diwaliSampleItems(makeId = (index) => `diwali-sample-${index + 1}`) {
-  return GIFTS.map((gift, index) => ({
-    id: makeId(index),
+function toItem(gift, id) {
+  return {
+    id,
     title: gift.title,
     url: amazonAffiliateUrl(`https://www.amazon.in/dp/${gift.asin}`, DEFAULT_AMAZON_ASSOCIATE_TAG),
     image: '',
@@ -50,5 +50,15 @@ export function diwaliSampleItems(makeId = (index) => `diwali-sample-${index + 1
     notes: gift.notes,
     priority: gift.priority,
     reservedBy: null,
-  }))
+  }
+}
+
+export function diwaliSampleItems(makeId = (index) => `diwali-sample-${index + 1}`) {
+  return GIFTS.map((gift, index) => toItem(gift, makeId(index)))
+}
+
+const QUICK_INDEXES = [0, 3, 1]
+
+export function diwaliQuickAdds(makeId = (index) => `diwali-quick-${index + 1}`) {
+  return QUICK_INDEXES.map((giftIndex, index) => toItem(GIFTS[giftIndex], makeId(index)))
 }
