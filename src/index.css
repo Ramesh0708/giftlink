@@ -561,6 +561,36 @@ textarea { min-height: 88px; resize: vertical; }
   color: var(--muted);
 }
 .empty .nav-actions { justify-content: center; }
+.suggest { display: grid; gap: 8px; margin: 4px 0 12px; text-align: left; }
+.suggest .meta { margin: 0; }
+.suggest-row { display: grid; gap: 8px; }
+.suggest-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.suggest-chip strong {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 560;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+.suggest-chip span {
+  color: var(--wine);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.suggest-chip:hover { border-color: #e0c9b0; background: #fff8ee; }
 
 .priority {
   display: flex;

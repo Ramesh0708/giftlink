@@ -1,4 +1,4 @@
-import { bumpStat, fieldForEvent, readStats } from '../lib/stats-store.mjs'
+import { bumpStat, fieldForEvent, readStats, statAmount } from '../lib/stats-store.mjs'
 import { cleanRef } from '../lib/wishlist-access.mjs'
 
 export default async (req) => {
@@ -17,7 +17,7 @@ export default async (req) => {
         return Response.json(await bumpStat(field, 1, listId))
       }
       const once = field === 'created' ? cleanRef(body.listId) : ''
-      return Response.json(await bumpStat(field, 1, once))
+      return Response.json(await bumpStat(field, statAmount(field, body.amount), once))
     }
     return Response.json({ error: 'Method not allowed' }, { status: 405 })
   } catch (err) {

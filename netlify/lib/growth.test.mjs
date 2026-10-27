@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { amazonAffiliateUrl, amazonAssociateTag, tagAmazonLinks } from './affiliate.mjs'
 import { needsShareNudge } from './nudge.mjs'
-import { fieldForEvent, normalizeStats } from './stats-store.mjs'
+import { fieldForEvent, normalizeStats, statAmount } from './stats-store.mjs'
 
 test('an unset associate tag uses the public GiftLink tag', () => {
   const url = 'https://www.amazon.in/dp/B0CHX1W1XY'
@@ -65,4 +65,11 @@ test('stats keep the original counters and add funnel fields', () => {
   assert.equal(fieldForEvent('buy'), 'buyClicks')
   assert.equal(fieldForEvent('ref'), 'refSignups')
   assert.equal(fieldForEvent('nope'), '')
+  assert.equal(fieldForEvent('item'), 'items')
+  assert.equal(statAmount('items', '5'), 5)
+  assert.equal(statAmount('items', 1), 1)
+  assert.equal(statAmount('items', 0), 1)
+  assert.equal(statAmount('items', 99), 50)
+  assert.equal(statAmount('published', 5), 1)
+  assert.equal(statAmount('opens', '3'), 1)
 })

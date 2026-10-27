@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Priority, WishItem } from '../types'
 import { STORES, storeFromUrl } from '../data/stores'
 import { previewUrl } from '../lib/api'
-import { CURRENCIES, currencyFromUrl } from '../lib/format'
+import { CURRENCIES, currencyFromUrl, money } from '../lib/format'
 import { uid } from '../lib/ids'
 import { MANUAL_FILL, isJunkProductTitle } from '../lib/product'
 import { useRegion } from '../lib/region-context'
@@ -22,10 +22,14 @@ const empty = (): WishItem => ({
 
 export default function ItemModal({
   initial,
+  suggestions = [],
+  onQuickAdd,
   onClose,
   onSave,
 }: {
   initial?: WishItem
+  suggestions?: WishItem[]
+  onQuickAdd?: (item: WishItem) => void
   onClose: () => void
   onSave: (item: WishItem) => void
 }) {
@@ -159,6 +163,24 @@ export default function ItemModal({
               placeholder={experience?.linkPlaceholder ?? 'https://…'}
             />
           </label>
+          {!initial && suggestions.length > 0 && (
+            <div className="suggest">
+              <p className="meta">Or tap a Diwali gift to add it now.</p>
+              <div className="suggest-row">
+                {suggestions.map((gift) => (
+                  <button
+                    type="button"
+                    className="suggest-chip"
+                    key={gift.url}
+                    onClick={() => onQuickAdd?.(gift)}
+                  >
+                    <strong>{gift.title}</strong>
+                    <span>{money(gift.price, gift.currency)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             type="button"
             className="btn btn-ghost"

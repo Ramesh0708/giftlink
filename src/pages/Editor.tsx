@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import ConnectStore from '../components/ConnectStore'
 import ItemModal from '../components/ItemModal'
+import { diwaliQuickAdds } from '../data/diwali-sample.mjs'
 import { isDefaultOccasion } from '../data/regions'
 import { storeMeta } from '../data/stores'
 import { fetchOwned, fetchPublic, publishList } from '../lib/api'
 import { money } from '../lib/format'
+import { uid } from '../lib/ids'
 import { defaultNote, isStockNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
 import { needsShareNudge } from '../../netlify/lib/nudge.mjs'
 import { ownerEditUrl, ownerKeyFromHash, publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
-import { gaEvent, track } from '../lib/track'
+import { track, trackItems } from '../lib/track'
 import { loadList, removeList, saveList } from '../lib/storage'
 import type { StoredList, StoreLink, WishItem } from '../types'
 
@@ -25,6 +27,9 @@ export default function Editor() {
   const [toast, setToast] = useState('')
   const [publishing, setPublishing] = useState(false)
   const [blocked, setBlocked] = useState('')
+  const [shareNudge, setShareNudge] = useState(
+    () => sessionStorage.getItem(`giftlink:nudge-share:${id}`) === '1',
+  )
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const syncTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const shareUrl = useMemo(
@@ -42,6 +47,7 @@ export default function Editor() {
     if (sessionStorage.getItem('giftlink:creating') === id) {
       sessionStorage.removeItem('giftlink:creating')
     }
+    setShareNudge(sessionStorage.getItem(`giftlink:nudge-share:${id}`) === '1')
     let live = true
     const local = loadList(id)
     setList(local)
@@ -144,7 +150,7 @@ export default function Editor() {
       }
       saveList(marked)
       setList(marked)
-      if (firstPublish) gaEvent('published', { listId: next.id })
+      if (firstPublish) track('published', { listId: next.id })
       return true
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Could not publish yet.')
@@ -154,11 +160,17 @@ export default function Editor() {
     }
   }
 
+  function dismissShareNudge() {
+    sessionStorage.removeItem(`giftlink:nudge-share:${id}`)
+    setShareNudge(false)
+  }
+
   async function shareWhatsApp() {
     if (!list) return
     const popup = window.open('', '_blank')
     const ok = await publish(list)
     track('share', { listId: list.id })
+    if (ok) dismissShareNudge()
     const href = whatsappShareUrl(shareUrl, list.recipient, list.occasion)
     if (!ok) {
       popup?.close()
@@ -173,6 +185,7 @@ export default function Editor() {
     const ok = await publish(list)
     if (!ok) return
     track('share', { listId: list.id })
+    dismissShareNudge()
     const text = shareCopy(shareUrl, list.recipient, list.occasion)
     try {
       await navigator.clipboard.writeText(text)
@@ -211,9 +224,17 @@ export default function Editor() {
         : [item, ...current.items],
     })
     setModal(null)
-    void publish(next).then((ok) => {
-      if (ok && !exists) gaEvent('item', { listId: current.id })
-    })
+    if (params.get('item') === '1') {
+      const nextParams = new URLSearchParams(params)
+      nextParams.delete('item')
+      setParams(nextParams, { replace: true })
+    }
+    if (!exists) trackItems(current.id, [item.id])
+    void publish(next)
+  }
+
+  function addSuggestion(gift: WishItem) {
+    saveItem({ ...gift, id: uid(), reservedBy: null })
   }
 
   function importFromStore(items: WishItem[], link: StoreLink) {
@@ -235,13 +256,14 @@ export default function Editor() {
         : 'Those items are already on this list.',
     )
     if (fresh.length) {
-      const added = fresh.length
-      void publish(next).then((ok) => {
-        if (!ok) return
-        for (let i = 0; i < added; i += 1) gaEvent('item', { listId: current.id })
-      })
+      trackItems(current.id, fresh.map((item) => item.id))
+      void publish(next)
     }
   }
+
+  const suggestions = diwaliQuickAdds().filter(
+    (gift) => !current.items.some((item) => item.url === gift.url),
+  )
 
   const amazonLink = (list.links || []).find((l) => l.store === 'amazon')
   const flipkartLink = (list.links || []).find((l) => l.store === 'flipkart')
@@ -280,6 +302,25 @@ export default function Editor() {
           </button>
         </div>
       </div>
+
+      {shareNudge && list.items.length > 0 && (
+        <div className="nudge" role="status">
+          <strong>
+            {list.items.length === 1
+              ? 'Your first gift is in. Share the list.'
+              : `${list.items.length} gifts are in. Share the list.`}
+          </strong>
+          <p>Friends only see it if you send the link. Sharing publishes the list.</p>
+          <div className="nav-actions">
+            <button className="btn btn-whatsapp" type="button" disabled={publishing} onClick={() => void shareWhatsApp()}>
+              Share on WhatsApp
+            </button>
+            <button className="btn btn-ghost" type="button" disabled={publishing} onClick={() => void copyLink()}>
+              Copy link
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card form" style={{ marginBottom: 22 }}>
         <div className="row-2">
@@ -409,6 +450,24 @@ export default function Editor() {
         <div className="card empty">
           <h3>Nothing here yet</h3>
           <p>{experience?.emptyBody}</p>
+          {suggestions.length > 0 && (
+            <div className="suggest">
+              <p className="meta">Or tap a Diwali gift to add it now.</p>
+              <div className="suggest-row">
+                {suggestions.map((gift) => (
+                  <button
+                    type="button"
+                    className="suggest-chip"
+                    key={gift.url}
+                    onClick={() => addSuggestion(gift)}
+                  >
+                    <strong>{gift.title}</strong>
+                    <span>{money(gift.price, gift.currency)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="nav-actions" style={{ justifyContent: 'center' }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setConnect('amazon')}>
               Connect Amazon
@@ -513,6 +572,8 @@ export default function Editor() {
               setParams(next, { replace: true })
             }
           }}
+          suggestions={modal === 'new' ? suggestions : []}
+          onQuickAdd={addSuggestion}
           onSave={saveItem}
         />
       )}

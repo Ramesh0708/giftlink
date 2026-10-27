@@ -11,7 +11,7 @@ import { displayNote } from '../lib/note'
 import { displayPhoto } from '../lib/photos.mjs'
 import { useRegion } from '../lib/region-context'
 import { forwardCopy, publicShareUrl, whatsappForwardUrl } from '../lib/share'
-import { gaEvent, track } from '../lib/track'
+import { track } from '../lib/track'
 import type { Wishlist } from '../types'
 
 const NAME_KEY = 'giftlink:gifterName'
@@ -72,7 +72,7 @@ export default function View() {
       .then((data) => {
         if (!live) return
         setList(data)
-        gaEvent('open', { listId: id })
+        track('open', { listId: id })
       })
       .catch((err: unknown) => {
         if (live) setError(err instanceof Error ? err.message : 'Not found')
@@ -119,7 +119,7 @@ export default function View() {
       const result = await reserveItem(id, itemId, name.trim(), claimTokens(id))
       rememberClaim(id, itemId, result.claimToken)
       setList(result.list)
-      gaEvent('claim', { listId: id })
+      track('claim', { listId: id })
       if (!reducedMotion()) {
         setCelebrating(itemId)
         window.setTimeout(() => setCelebrating((current) => (current === itemId ? null : current)), 1700)
