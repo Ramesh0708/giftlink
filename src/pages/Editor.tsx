@@ -10,7 +10,7 @@ import { money } from '../lib/format'
 import { uid } from '../lib/ids'
 import { defaultNote, isStockNote } from '../lib/note'
 import { useRegion } from '../lib/region-context'
-import { needsShareNudge } from '../../netlify/lib/nudge.mjs'
+import { needsPublishBanner, needsShareNudge } from '../../netlify/lib/nudge.mjs'
 import { ownerEditUrl, ownerKeyFromHash, publicShareUrl, shareCopy, whatsappShareUrl } from '../lib/share'
 import { track, trackItems } from '../lib/track'
 import { loadList, removeList, saveList } from '../lib/storage'
@@ -36,6 +36,22 @@ export default function Editor() {
     () => (id ? publicShareUrl(window.location.origin, id) : ''),
     [id],
   )
+  const showPublishBanner = needsPublishBanner(list, shareNudge)
+  const publishBannerRef = useRef<HTMLElement>(null)
+  const scrolledBanner = useRef(false)
+
+  useEffect(() => {
+    scrolledBanner.current = false
+  }, [id])
+
+  useEffect(() => {
+    if (!showPublishBanner || scrolledBanner.current) return
+    scrolledBanner.current = true
+    const node = publishBannerRef.current
+    if (!node) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    node.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+  }, [showPublishBanner, id])
 
   function flash(message: string) {
     setToast(message)
@@ -303,23 +319,26 @@ export default function Editor() {
         </div>
       </div>
 
-      {shareNudge && list.items.length > 0 && (
-        <div className="nudge" role="status">
+      {showPublishBanner && (
+        <aside className="publish-banner" ref={publishBannerRef}>
           <strong>
-            {list.items.length === 1
-              ? 'Your first gift is in. Share the list.'
-              : `${list.items.length} gifts are in. Share the list.`}
+            {list.items.length === 1 ? 'Your first gift is in.' : `${list.items.length} gifts are ready.`}
           </strong>
-          <p>Friends only see it if you send the link. Sharing publishes the list.</p>
+          <p>Publish the list and send it on WhatsApp. Friends open that link and claim a gift.</p>
           <div className="nav-actions">
-            <button className="btn btn-whatsapp" type="button" disabled={publishing} onClick={() => void shareWhatsApp()}>
-              Share on WhatsApp
+            <button
+              className="btn btn-whatsapp"
+              type="button"
+              disabled={publishing}
+              onClick={() => void shareWhatsApp()}
+            >
+              Publish & share on WhatsApp
             </button>
             <button className="btn btn-ghost" type="button" disabled={publishing} onClick={() => void copyLink()}>
               Copy link
             </button>
           </div>
-        </div>
+        </aside>
       )}
 
       <div className="card form" style={{ marginBottom: 22 }}>

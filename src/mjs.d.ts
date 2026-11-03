@@ -68,4 +68,8 @@ declare module '*.mjs' {
     list: { published?: boolean; publishedAt?: string | null; updatedAt?: string; opens?: number },
     now?: number,
   ): boolean
+  export function needsPublishBanner(
+    list: { published?: boolean; items?: unknown[] } | null | undefined,
+    pendingShare?: boolean,
+  ): boolean
 }

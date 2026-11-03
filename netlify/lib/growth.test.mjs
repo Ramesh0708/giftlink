@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { amazonAffiliateUrl, amazonAssociateTag, tagAmazonLinks } from './affiliate.mjs'
-import { needsShareNudge } from './nudge.mjs'
+import { needsPublishBanner, needsShareNudge } from './nudge.mjs'
 import { fieldForEvent, normalizeStats, statAmount } from './stats-store.mjs'
 
 test('an unset associate tag uses the public GiftLink tag', () => {
@@ -41,6 +41,14 @@ test('the share nudge appears only after a day with zero opens', () => {
   assert.equal(needsShareNudge({ published: true, publishedAt: start, opens: 1 }, later), false)
   assert.equal(needsShareNudge({ published: true, publishedAt: start, opens: 0 }, Date.parse(start) + 1000), false)
   assert.equal(needsShareNudge({ publishedAt: start, opens: 0 }, later), true)
+})
+
+test('the publish banner appears after the first gift until the list is shared', () => {
+  assert.equal(needsPublishBanner({ items: [], published: false }, true), false)
+  assert.equal(needsPublishBanner({ items: [{ id: 'a' }], published: false }, false), true)
+  assert.equal(needsPublishBanner({ items: [{ id: 'a' }], published: true }, true), true)
+  assert.equal(needsPublishBanner({ items: [{ id: 'a' }, { id: 'b' }], published: true }, false), false)
+  assert.equal(needsPublishBanner(null, true), false)
 })
 
 test('stats keep the original counters and add funnel fields', () => {
