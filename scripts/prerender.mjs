@@ -51,6 +51,7 @@ const home = {
   <p>Share what you actually want</p>
   <h1>Gifts without the awkward guessing.</h1>
   <p><a href="/new?item=1">Add your first item</a> <a href="/new?sample=diwali">Start with a sample Diwali list</a></p>
+  <p><a href="/diwali-gift-list/">Diwali gift list</a></p>
   <p>Build a wishlist from Amazon, Flipkart, Myntra, and anywhere you shop. Add a gift and the list goes live. Share one WhatsApp link, and friends can claim a gift so nobody doubles up.</p>
   <h2>Start from an occasion</h2>
   <p>Diwali is 8 Nov. The other lists work any time of year.</p>
@@ -94,6 +95,11 @@ const howto = {
   <h2>4. What friends do</h2>
   <p>They type their name, tap I’ll get this, then buy from the product link. Other people only see that the gift is claimed.</p>
   <p><a href="/new">Create my wishlist</a> <a href="/">Back home</a></p>
+  <footer class="site">
+    <nav class="occasion-links" aria-label="Occasion lists">
+      <a href="/diwali-gift-list/">Diwali gift list</a>
+    </nav>
+  </footer>
 </main>`,
 }
 
@@ -119,6 +125,11 @@ function landingBody(page) {
     .map((point) => `<h2>${escapeHtml(point.h)}</h2>\n  <p>${escapeHtml(point.p)}</p>`)
     .join('\n  ')}
   <p><a href="/new">Make your own GiftLink</a> <a href="/">GiftLink home</a></p>
+  <footer class="site">
+    <nav class="occasion-links" aria-label="Occasion lists">
+      <a href="/diwali-gift-list/">Diwali gift list</a>
+    </nav>
+  </footer>
 </main>`
 }
 
@@ -180,8 +191,9 @@ const homeHtml = page(template, home)
 if (!homeHtml.includes('href="/new?item=1"') || !homeHtml.includes('href="/new?sample=diwali"')) {
   throw new Error('Prerendered home is missing the first-item calls to action')
 }
-if (!homeHtml.includes('href="/diwali-gift-list/"')) {
-  throw new Error('Prerendered home is missing the static Diwali gift list link')
+const homeDiwaliLinks = homeHtml.match(/href="\/diwali-gift-list\/"/g) || []
+if (homeDiwaliLinks.length < 3) {
+  throw new Error('Prerendered home needs Diwali links in the hero, occasion grid, and footer')
 }
 if (!homeHtml.includes('name="google-site-verification"')) {
   throw new Error('Prerendered home is missing the Google site verification tag')
@@ -191,7 +203,11 @@ if (!homeHtml.includes('G-EP4MKTGEZ4')) {
 }
 fs.writeFileSync(path.join(dist, 'index.html'), homeHtml)
 fs.mkdirSync(path.join(dist, 'how-to'), { recursive: true })
-fs.writeFileSync(path.join(dist, 'how-to', 'index.html'), page(template, howto))
+const howtoHtml = page(template, howto)
+if (!howtoHtml.includes('href="/diwali-gift-list/"')) {
+  throw new Error('Prerendered how-to page is missing the Diwali gift list link')
+}
+fs.writeFileSync(path.join(dist, 'how-to', 'index.html'), howtoHtml)
 
 for (const landing of landings) {
   const dir = path.join(dist, landing.path.replace(/^\//, ''))
@@ -215,6 +231,9 @@ if (sample) {
   )
   if (!sampleHtml.includes('googletagmanager.com/gtag/js?id=G-EP4MKTGEZ4')) {
     throw new Error('Prerendered landing page is missing Google Analytics')
+  }
+  if (!sampleHtml.includes('href="/diwali-gift-list/"')) {
+    throw new Error('Prerendered landing page is missing the Diwali gift list link')
   }
 }
 

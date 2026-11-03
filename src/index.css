@@ -220,6 +220,8 @@ img { max-width: 100%; display: block; }
   font-size: 1.08rem;
   box-shadow: 0 10px 24px rgba(139, 41, 66, 0.28);
 }
+.hero-links { margin: -4px 0 16px; }
+.hero-links a { color: var(--wine-deep); font-weight: 800; }
 .eyebrow {
   color: var(--wine);
   font-weight: 800;
@@ -650,6 +652,10 @@ footer.credits {
   padding: 8px 0 48px;
   text-align: center;
 }
+footer.credits .occasion-links {
+  justify-content: center;
+  margin: 14px 0 8px;
+}
 
 .scroll-progress {
   position: fixed;
@@ -800,6 +806,43 @@ footer.credits {
   border: 1px solid #efd7a2;
 }
 .nudge p { margin: 6px 0 12px; }
+.publish-banner {
+  margin: 0 0 22px;
+  padding: 20px 20px 18px;
+  border-radius: 22px;
+  color: #fff8ee;
+  background: linear-gradient(100deg, #5c1a2c, #8b2942 58%, #a45c2a);
+  box-shadow: var(--shadow);
+}
+.publish-banner strong {
+  display: block;
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.publish-banner p {
+  margin: 8px 0 14px;
+  max-width: 62ch;
+  color: #fff1dc;
+}
+.publish-banner .btn-whatsapp {
+  min-height: 52px;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+}
+.publish-banner .btn-ghost {
+  background: #fff8ee;
+  color: var(--wine-deep);
+  border-color: transparent;
+}
+.publish-banner .btn-ghost:hover {
+  background: #fff;
+  border-color: transparent;
+}
+@media (width <= 840px) {
+  .publish-banner .btn-whatsapp { width: 100%; }
+}
 .landing-points {
   display: grid;
   gap: 14px;

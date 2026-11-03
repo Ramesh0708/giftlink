@@ -1,6 +1,6 @@
 import { landings, withTrailingSlash } from './landings.mjs'
 
-export const SITEMAP_LASTMOD = '2026-10-22'
+export const SITEMAP_LASTMOD = '2026-11-03'
 export const SITEMAP_ORIGIN = 'https://wiishlist.netlify.app'
 
 export function staticSitemapPaths() {

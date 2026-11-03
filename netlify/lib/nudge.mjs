@@ -7,3 +7,10 @@ export function needsShareNudge(list, now = Date.now()) {
   if (!Number.isFinite(start)) return false
   return now - start >= DAY_MS
 }
+
+export function needsPublishBanner(list, pendingShare = false) {
+  const count = Array.isArray(list?.items) ? list.items.length : 0
+  if (count < 1) return false
+  if (!list.published) return true
+  return Boolean(pendingShare)
+}

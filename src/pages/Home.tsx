@@ -41,6 +41,10 @@ export default function Home() {
               Start with a sample Diwali list
             </Link>
           </p>
+          <p className="meta hero-links">
+            <Link to="/diwali-gift-list/">Diwali gift list</Link>
+            {' · 8 Nov'}
+          </p>
           <p className="lede">{experience.lede}</p>
         </div>
         <div className="hero-card" aria-hidden="true">

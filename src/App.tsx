@@ -150,6 +150,9 @@ export default function App() {
       </Suspense>
       <RegionGate />
       <footer className="site credits">
+        <nav className="occasion-links" aria-label="Occasion lists">
+          <Link to="/diwali-gift-list/">Diwali gift list</Link>
+        </nav>
         {visits != null && (
           <>
             <AnimatedCounter value={visits} /> visits
